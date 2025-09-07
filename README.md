@@ -81,7 +81,3 @@ The API will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 - Add new endpoints in `app/api/endpoints.py`.
 - Add business logic in `app/services/`.
 - Define request/response models in `app/schemas.py`.
-
-## License
-
-This project is for internal use and prototyping. Add your license
