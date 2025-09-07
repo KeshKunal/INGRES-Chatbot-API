@@ -6,7 +6,7 @@ from ..services import ChatService
 router = APIRouter()
 
 @router.post("/chat", response_model=ChatResponse, tags=["Chat"])
-def process_chat(request: ChatRequest) -> ChatResponse:
+async def process_chat(request: ChatRequest) -> ChatResponse:
     """
     Receives a user query and returns an AI-generated response
     by calling the ChatService.
