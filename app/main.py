@@ -1,6 +1,6 @@
-# app/main.py
 from fastapi import FastAPI
 from .config import settings
+from .api import endpoints
 
 # Create the FastAPI app instance
 app = FastAPI(
@@ -8,6 +8,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="AI-driven ChatBOT for INGRES as a virtual assistant"
 )
+
+# Include the router from the endpoints module
+app.include_router(endpoints.router, prefix="/api/v1")
 
 @app.get("/", tags=["Root"])
 def read_root():
