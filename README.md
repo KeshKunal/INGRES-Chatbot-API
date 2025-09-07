@@ -33,8 +33,10 @@ ingres-chatbot-api/
 ### 1. Clone the repository
 
 ```sh
-git clone https://github.com/KeshKunal/INGRES-Chatbot-API
-cd "Chatbot API"
+git clone https://github.com/KeshKunal/INGRES-Chatbot-API.git
+cd INGRES-Chatbot-API
+git checkout develop
+
 ```
 
 ### 2. Create and activate a virtual environment (recommended)
