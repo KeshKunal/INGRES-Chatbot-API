@@ -10,7 +10,11 @@ class Settings(BaseSettings):
     APP_NAME: str = "INGRES AI Chatbot"
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
-
+    
+    # Logging
+    LOG_LEVEL: str = "INFO"  
+    LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
     # API Keys
     LLM_API_KEY: str
     BHASHINI_API_KEY: str

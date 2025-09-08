@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator  # Change import
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
@@ -12,8 +12,9 @@ class ChatRequest(BaseModel):
     include_visualization: Optional[bool] = Field(False, description="Request data visualization")
     context: Optional[Dict[str, Any]] = Field(None, description="Additional context for the query")
 
-    @validator('query')
-    def validate_query(cls, v):
+    @field_validator('query')  # Changed from @validator to @field_validator
+    @classmethod  # Add this decorator
+    def validate_query(cls, v: str) -> str:  # Add type annotations
         """Validate query for basic security"""
         dangerous_patterns = ['drop', 'delete', 'update', 'insert', 'alter', 'create', 'truncate']
         v_lower = v.lower()
