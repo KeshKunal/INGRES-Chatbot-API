@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # API Keys
     LLM_API_KEY: str
     BHASHINI_API_KEY: str
+    SARVAM_API_KEY: str
 
     # Database Configuration
     DATABASE_URL: str = "postgresql://user:password@localhost/ingres_db"
