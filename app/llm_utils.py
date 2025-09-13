@@ -104,43 +104,24 @@ def get_json_from_query(user_query):
 
 def get_english_from_data(user_query, db_data):
     """
-    NLG: Takes database data and generates a summary, but first checks if the data is relevant.
+    NLG: Takes a user's question and structured database data, and uses the
+    Sarvam AI API to generate a direct, data-driven summary.
     """
-    # If the database returns nothing, tell the user.
     if not db_data:
-        # We can make this message more specific now.
-        return f"I searched the database but couldn't find any specific records for your query: '{user_query}'. Please check the spelling or try a different location."
+        return "I couldn't find any data matching your query."
 
-    # --- THIS IS THE NEW "GUARDRAIL" ---
-    # Heuristic Check: Let's see if a key term from the query appears in the results.
-    # We'll check the first row as a sample.
-    first_row_text = str(db_data[0]).lower()
-    query_terms = [word for word in user_query.lower().split() if len(word) > 3 and word not in ["give", "the", "data", "of", "me"]]
-    
-    is_relevant = False
-    for term in query_terms:
-        if term in first_row_text:
-            is_relevant = True
-            break
-            
-    if not is_relevant:
-        # The AI made a mistake! The data doesn't match the query.
-        logger.warning(f"Data-Query Mismatch! Query was '{user_query}', but data was '{first_row_text}'")
-        return "I found some data, but it doesn't seem to match your specific request. Could you please try rephrasing your query? Including the state name often helps (e.g., 'Bengaluru South, Karnataka')."
-    # --- END OF GUARDRAIL ---
-
-    # If the data is relevant, proceed with summarization
+    # Convert the list of dictionaries to a more readable string format
     data_string = "\n".join([str(row) for row in db_data])
 
     messages = [
         {
             "role": "system",
-            "content": """You are a straightforward data assistant. Your ONLY job is to summarize the database results provided.
+            "content": """You are a straightforward data assistant for the INGRES system.
+            Your ONLY job is to summarize the database results provided.
             - Summarize the key data points in a simple bulleted list.
-            - DO NOT use any external knowledge or add conversational fluff.
+            - DO NOT use any external knowledge.
             - If the data for a field is missing or null, state that directly.
-            - Use proper units: 'mm' for rainfall, 'ham' (hectare-meters) for water volumes.
-            - Round decimal numbers to 2 places for clarity.
+            - Be concise and direct. Do not add conversational fluff or list your capabilities.
             """
         },
         {

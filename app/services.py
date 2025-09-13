@@ -21,13 +21,6 @@ class ChatService:
         try:
             # Step 1: Convert natural language to structured query
             query_json = get_json_from_query(request.query)
-            
-            # Debug line to see the exact JSON produced by the LLM
-            logger.info(f"DEBUG: The LLM produced this JSON -> {query_json}")
-            
-            if not query_json:
-                raise ValueError("Could not understand the query.")
-            
             logger.info(f"Generated query JSON: {query_json}")
             
             # Step 2: Execute database query with filters

@@ -21,9 +21,20 @@ class Settings(BaseSettings):
     SARVAM_API_KEY: str
 
     # Database Configuration
-    DATABASE_URL: str = "postgresql://user:password@localhost/ingres_db"
+    db_user: str = "user"
+    db_password: str = "password"
+    db_host: str = "localhost"
+    db_port: str = "5432"
+    db_name: str = "ingres_db"
+    DATABASE_URL: Optional[str] = None
     DATABASE_POOL_SIZE: int = 10
     DATABASE_MAX_OVERFLOW: int = 20
+
+    @property
+    def get_database_url(self) -> str:
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}?sslmode=require"
 
     # Security
     API_RATE_LIMIT: str = "100/minute"

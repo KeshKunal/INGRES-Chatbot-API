@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from .config import settings
 from .api import endpoints
-from .middleware import request_logging_middleware, error_handling_middleware, rate_limit_middleware
 
 # Create the FastAPI app instance
 app = FastAPI(
@@ -9,11 +8,6 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="AI-driven ChatBOT for INGRES as a virtual assistant"
 )
-
-# Add middleware for logging, error handling, and rate limiting
-app.middleware("http")(request_logging_middleware)
-app.middleware("http")(error_handling_middleware)
-app.middleware("http")(rate_limit_middleware)
 
 # Include the router from the endpoints module
 app.include_router(endpoints.router, prefix="/api/v1")
