@@ -13,19 +13,31 @@ A FastAPI-based backend for the INGRES AI Chatbot, designed to serve as a virtua
 
 ```
 ingres-chatbot-api/
-├── .env
 ├── .gitignore
 ├── README.md
+├── app
+    ├── __init__.py
+    ├── api
+    │   ├── __init__.py
+    │   ├── endpoints.py
+    │   └── schemas.py
+    ├── config.py
+    ├── db.py
+    ├── exceptions.py
+    ├── llm_utils.py
+    ├── logger.py
+    ├── main.py
+    ├── middleware.py
+    ├── services.py
+    └── setup_db.py
 ├── requirements.txt
-├── app/
-│ ├── api/
-│ │ ├── endpoints.py # API endpoints (routers)
-│ │ └── schemas.py # Pydantic models for request/response
-│ ├── services.py # Business logic (AI, DB calls)
-│ ├── config.py # Configuration management
-│ └── main.py # Main FastAPI app instance
-└── tests/
-└── test_services.py # Unit tests for the service layer
+└── tests
+    ├── __init__.py
+    ├── check_db.py
+    ├── test_db.py
+    ├── test_llm.py
+    ├── test_pipeline.py
+    └── test_services.py
 ```
 
 ## Getting Started
