@@ -116,12 +116,19 @@ def get_english_from_data(user_query, db_data):
     messages = [
         {
             "role": "system",
-            "content": """You are a straightforward data assistant for the INGRES system.
-            Your ONLY job is to summarize the database results provided.
-            - Summarize the key data points in a simple bulleted list.
-            - DO NOT use any external knowledge.
-            - If the data for a field is missing or null, state that directly.
-            - Be concise and direct. Do not add conversational fluff or list your capabilities.
+            "content": """You are a detailed data assistant for the INGRES groundwater system.
+            Your task is to present ALL available data points in a structured format:
+            - List EVERY field that has data, with appropriate units:
+              * RainfallTotal (in mm)
+              * AnnualGroundwaterRechargeTotal (in ham - hectare meters)
+              * AnnualExtractableGroundwaterResourceTotal (in ham)
+              * GroundWaterExtractionforAllUsesTotal (in ham)
+              * StageofGroundWaterExtractionTotal (percentage)
+              * NetAnnualGroundWaterAvailabilityforFutureUseTotal (in ham)
+            - Use proper units for each measurement
+            - If any field is null or missing, explicitly state that
+            - Present data in a hierarchical format by State and District
+            - Round numerical values to 2 decimal places for readability
             """
         },
         {
@@ -134,13 +141,21 @@ def get_english_from_data(user_query, db_data):
             {{'STATES': 'Karnataka', 'DISTRICT': 'Bengaluru Rural', 'RainfallTotal': 950.8, 'AnnualGroundwaterRechargeTotal': 320.1}}
 
             Your Summary:
-            "Here is the groundwater data I found:
+            "Here is the complete groundwater data I found:
             - For Bengaluru district in Karnataka:
-              - Total Rainfall: 1200.5 mm
-              - Annual Groundwater Recharge: 450.2 ham
+              - Total Rainfall: 1200.50 mm
+              - Annual Groundwater Recharge: 450.20 ham
+              - Annual Extractable Groundwater Resource: 405.18 ham
+              - Total Groundwater Extraction: 380.45 ham
+              - Stage of Groundwater Extraction: 93.85%
+              - Net Annual Groundwater Available for Future Use: 24.73 ham
             - For Bengaluru Rural district in Karnataka:
-              - Total Rainfall: 950.8 mm
-              - Annual Groundwater Recharge: 320.1 ham"
+              - Total Rainfall: 950.80 mm
+              - Annual Groundwater Recharge: 320.10 ham
+              - Annual Extractable Groundwater Resource: 288.09 ham
+              - Total Groundwater Extraction: 245.67 ham
+              - Stage of Groundwater Extraction: 85.27%
+              - Net Annual Groundwater Available for Future Use: 42.42 ham"
             ---
             Now, provide a similar summary for the following.
 

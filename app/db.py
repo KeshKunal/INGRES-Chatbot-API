@@ -17,8 +17,8 @@ def execute_query(filters: dict) -> list:
     """
     Safely builds and executes a SQL query on the "ingressdata2025" table.
     """
-    # Use the confirmed table name
-    query_builder = ['SELECT "STATES", "DISTRICT", "RainfallTotal", "AnnualGroundwaterRechargeTotal" FROM public."ingressdata2025" WHERE 1=1']
+    # Use all relevant columns from the table
+    query_builder = ['SELECT "STATES", "DISTRICT", "RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal" FROM public."ingressdata2025" WHERE 1=1']
     params = {}
 
     # Dynamically and safely add filters from the JSON

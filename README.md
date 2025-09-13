@@ -12,6 +12,8 @@ A FastAPI-based backend for the INGRES AI Chatbot, designed to serve as a virtua
 ## Project Structure
 
 ```
+ingres-chatbot-api/
+├── .env
 ├── .gitignore
 ├── README.md
 ├── app
