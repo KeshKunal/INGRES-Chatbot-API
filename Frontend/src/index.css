@@ -1,0 +1,38 @@
+/* CHIRU: Light theme (default) colors */
+:root {
+  --primary-bg-color: #ffffff;
+  --secondary-bg-color: #f0f4f8;
+  --primary-text-color: #1c2a38;
+  --secondary-text-color: #4a5568;
+  --accent-color: #007bff;
+  --accent-color-hover: #0056b3;
+  --border-color: #dee2e6;
+  --font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+  --icon-button-bg: #f0f4f8;
+  --icon-button-hover-bg: #e2e6ea;
+  --shadow-color: rgba(0, 0, 0, 0.05);
+  --logo-bg-color: #e9ecef;
+}
+
+/* CHIRU: Dark theme colors */
+.theme-dark {
+  --primary-bg-color: #1a202c;
+  --secondary-bg-color: #2d3748;
+  --primary-text-color: #e2e8f0;
+  --secondary-text-color: #a0aec0;
+  --accent-color: #38b2ac;
+  --accent-color-hover: #2c7a7b;
+  --border-color: #4a5568;
+  --icon-button-bg: #2d3748;
+  --icon-button-hover-bg: #4a5568;
+  --shadow-color: rgba(0, 0, 0, 0.2);
+  --logo-bg-color: #4a5568;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--primary-bg-color);
+  color: var(--primary-text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
