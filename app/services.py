@@ -1,61 +1,125 @@
 # app/services.py
+import asyncio
+import json
 from .api.schemas import ChatRequest
-from .config import settings
 from .llm_utils import get_json_from_query, get_english_from_data
 from .db import execute_query
 from .logger import get_logger
 
-# Setup basic logging
 logger = get_logger(__name__)
 
-
 class ChatService:
-    def generate_response(self, request: ChatRequest) -> dict:
-        """Main entry point for generating responses"""
-        return self.process_request(request)
-
-    def process_request(self, request):
-        """Process a chat request through the full pipeline"""
+    async def generate_streaming_response(self, request: ChatRequest):
+        """
+        Main entry point for generating responses as an asynchronous stream.
+        """
         logger.info(f"Processing query: {request.query}")
         
         try:
-            # Step 1: Convert natural language to structured query
+            # --- Stream Step 1: Acknowledge and think ---
+            yield "Analyzing your query... "
+            await asyncio.sleep(0.5)
+
+            # --- Step 2: Convert natural language to structured query ---
             query_json = get_json_from_query(request.query)
             logger.info(f"Generated query JSON: {query_json}")
             
             # Step 2: Execute database query with filters
-            filters = query_json.get('filters', {}) if query_json is not None else {}
+            filters = query_json.get('filters', {}) if query_json else {}
             db_results = execute_query(filters)
             logger.info(f"Database returned {len(db_results)} results")
             
             # Step 3: Generate natural language response
             response_text = get_english_from_data(request.query, db_results)
             
-            # Step 4: Prepare visualization data if requested
-            viz_data = {}
-            if request.include_visualization:
-                viz_data = self._prepare_visualization(db_results)
-                
-            return {
-                "response_text": response_text,
-                "visualization_data": viz_data,
-                "map_data": self._prepare_map_data(db_results) if db_results else {},
-            }
-            
+            # Stream word by word for a real-time effect
+            for word in response_text.split():
+                yield f"{word} "
+                await asyncio.sleep(0.05)
+
         except Exception as e:
             logger.error(f"Error processing query: {str(e)}")
-            return {
-                "response_text": f"I'm sorry, I couldn't process that request. Error: {str(e)}",
-                "visualization_data": {},
-                "map_data": {},
+            error_payload = {
+                "type": "error",
+                "text": "I'm sorry, an error occurred while processing your request.",
+                "errorDetails": str(e)
             }
+            yield f"data: {json.dumps(error_payload)}\n\n"
 
-    def _prepare_visualization(self, data):
-        """Convert DB results to visualization-ready format"""
-        # Logic to transform data for charts
-        return {}
-
-    def _prepare_map_data(self, data):
-        """Extract geospatial data for maps"""
-        # Logic to extract coordinates and values for map
-        return {}
+    def _prepare_visualization(self, data, query):
+        """Create chart data based on real database results."""
+        if not data or len(data) == 0:
+            return None
+        
+        # Get the first few records for visualization
+        sample_data = data[:10]  # Limit to first 10 records for chart clarity
+        
+        # Extract location names (district/state)
+        labels = []
+        for item in sample_data:
+            if 'DISTRICT' in item and 'STATES' in item:
+                labels.append(f"{item['DISTRICT']}, {item['STATES']}")
+            elif 'DISTRICT' in item:
+                labels.append(item['DISTRICT'])
+            elif 'STATES' in item:
+                labels.append(item['STATES'])
+            else:
+                labels.append("Unknown Location")
+        
+        # Determine what type of data to visualize based on available columns
+        chart_data = None
+        chart_title = "Groundwater Data"
+        
+        # Check for different types of groundwater data
+        if 'AnnualGroundwaterRechargeTotal' in sample_data[0]:
+            values = [float(item.get('AnnualGroundwaterRechargeTotal', 0)) for item in sample_data]
+            chart_title = "Annual Groundwater Recharge (HAM)"
+            chart_data = {
+                "labels": labels,
+                "datasets": [{
+                    "label": 'Annual Groundwater Recharge (HAM)',
+                    "data": values,
+                    "backgroundColor": 'rgba(54, 162, 235, 0.6)',
+                    "borderColor": 'rgba(54, 162, 235, 1)',
+                    "borderWidth": 1
+                }]
+            }
+        elif 'RainfallTotal' in sample_data[0]:
+            values = [float(item.get('RainfallTotal', 0)) for item in sample_data]
+            chart_title = "Total Rainfall (mm)"
+            chart_data = {
+                "labels": labels,
+                "datasets": [{
+                    "label": 'Total Rainfall (mm)',
+                    "data": values,
+                    "backgroundColor": 'rgba(75, 192, 192, 0.6)',
+                    "borderColor": 'rgba(75, 192, 192, 1)',
+                    "borderWidth": 1
+                }]
+            }
+        elif 'GroundWaterExtractionforAllUsesTotal' in sample_data[0]:
+            values = [float(item.get('GroundWaterExtractionforAllUsesTotal', 0)) for item in sample_data]
+            chart_title = "Total Groundwater Extraction (HAM)"
+            chart_data = {
+                "labels": labels,
+                "datasets": [{
+                    "label": 'Total Groundwater Extraction (HAM)',
+                    "data": values,
+                    "backgroundColor": 'rgba(255, 99, 132, 0.6)',
+                    "borderColor": 'rgba(255, 99, 132, 1)',
+                    "borderWidth": 1
+                }]
+            }
+        
+        if chart_data:
+            return {
+                "type": "graph",
+                "text": f"{chart_title} for your query",
+                "data": {
+                    "visualType": "bar",
+                    "title": chart_title,
+                    "chartData": chart_data
+                }
+            }
+        
+        return None
