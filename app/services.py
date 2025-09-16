@@ -25,7 +25,7 @@ class ChatService:
             logger.info(f"Generated query JSON: {query_json}")
             
             # Step 2: Execute database query with filters
-            filters = query_json.get('filters', {})
+            filters = query_json.get('filters', {}) if query_json else {}
             db_results = execute_query(filters)
             logger.info(f"Database returned {len(db_results)} results")
             
