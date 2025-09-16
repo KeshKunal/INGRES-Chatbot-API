@@ -60,13 +60,51 @@ function App() {
     setMessages(prev => [...prev, { id: botMessageId, sender: 'bot', text: '', type: 'text' }]);
 
     const handleChunk = (chunk) => {
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === botMessageId
-            ? { ...msg, text: msg.text + chunk }
-            : msg
-        )
-      );
+      if (typeof chunk === 'object') {
+        if (chunk.type === 'error') {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: chunk.text, type: 'error', errorDetails: chunk.errorDetails }
+                : msg
+            )
+          );
+        } else if (chunk.type === 'graph') {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { 
+                    ...msg, 
+                    text: chunk.text || 'Here is the requested chart.', 
+                    type: 'graph', 
+                    data: {
+                      visualType: 'bar',
+                      chartData: chunk.data
+                    } 
+                  }
+                : msg
+            )
+          );
+        } else {
+          // Handle other object types
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, ...chunk }
+                : msg
+            )
+          );
+        }
+      } else {
+        // Handle plain text chunks
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === botMessageId
+              ? { ...msg, text: msg.text + chunk }
+              : msg
+          )
+        );
+      }
     };
 
     await streamMessageFromBackend(messageText, selectedTools, handleChunk);
@@ -84,9 +122,10 @@ function App() {
       <ChatWindow 
         messages={messages} 
         isLoading={isLoading}
+        onSendMessage={handleSendMessage}
       />
 
-      {/* UPDATED: Wrapped in a footer for better structure */}
+      {/* Wrapped in a footer for better structure */}
       <footer className="bottom-area">
         <ToolsBar 
           selectedTools={selectedTools} 

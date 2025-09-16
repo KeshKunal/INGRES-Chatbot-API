@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8000/chat';
+const API_URL = `${process.env.REACT_APP_API_URL}/chat`;
 
 export const streamMessageFromBackend = async (message, selectedTools, onChunk) => {
   try {
@@ -32,7 +32,10 @@ export const streamMessageFromBackend = async (message, selectedTools, onChunk) 
 
   } catch (error) {
     console.error("Error communicating with the backend:", error);
-    const errorMessage = "Sorry, I'm having trouble connecting to the server. Please try again later.";
-    onChunk(errorMessage);
+    onChunk({
+      type: 'error',
+      text: "Sorry, I'm having trouble connecting to the server. Please try again later.",
+      errorDetails: error.message
+    });
   }
 };

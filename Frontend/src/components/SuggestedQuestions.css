@@ -1,0 +1,61 @@
+.suggested-questions {
+  padding: 15px;
+  margin: 20px auto;
+  border-radius: 12px;
+  background-color: rgba(0, 123, 255, 0.05);
+  border: 1px dashed rgba(0, 123, 255, 0.3);
+  max-width: 600px;
+  width: 80%;
+}
+
+.suggested-questions h4 {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: #666;
+  font-weight: 500;
+}
+
+.question-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.question-btn {
+  text-align: left;
+  background: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  color: #333;
+}
+
+.question-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='dark'] .suggested-questions {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .suggested-questions h4 {
+  color: #ccc;
+}
+
+[data-theme='dark'] .question-btn {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #eee;
+}
+
+[data-theme='dark'] .question-btn:hover {
+  background-color: #333;
+  border-color: #007bff;
+}
