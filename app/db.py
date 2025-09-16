@@ -36,7 +36,7 @@ def execute_query(filters):
             query += " AND year = :year"
             params['year'] = filters['year']
         """
-        query = "What is life"
+        query = ""
         params={}
         # Execute with parameters
         result = session.execute(text(query), params)

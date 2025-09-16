@@ -1,21 +1,17 @@
 from fastapi import APIRouter
-from .schemas import ChatRequest, ChatResponse
+from starlette.responses import StreamingResponse  # Import StreamingResponse
+from .schemas import ChatRequest  # We no longer use ChatResponse here
 from ..services import ChatService
 
-# Create a new router object
 router = APIRouter()
 
-@router.post("/chat", response_model=ChatResponse, tags=["Chat"])
-async def process_chat(request: ChatRequest) -> ChatResponse:
+@router.post("/chat", tags=["Chat"])
+async def process_chat_stream(request: ChatRequest):  # Renamed for clarity
     """
-    Receives a user query and returns an AI-generated response
-    by calling the ChatService.
+    Receives a user query and streams back an AI-generated response.
     """
     chat_service = ChatService()
-    result = chat_service.generate_response(request)
-    return ChatResponse(
-        session_id=request.session_id,
-        response_text=result["response_text"],
-        visualization_data=result["visualization_data"],
-        map_data=result["map_data"],
+    return StreamingResponse(
+        chat_service.generate_streaming_response(request), 
+        media_type="text/event-stream"
     )
