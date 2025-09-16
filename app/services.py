@@ -22,40 +22,14 @@ class ChatService:
 
             # --- Step 2: Convert natural language to structured query ---
             query_json = get_json_from_query(request.query)
-            logger.info(f"DEBUG: The LLM produced this JSON -> {query_json}")
+            logger.info(f"Generated query JSON: {query_json}")
             
-            if not query_json:
-                raise ValueError("Could not understand the query.")
+            # Step 2: Execute database query with filters
+            filters = query_json.get('filters', {})
+            db_results = execute_query(filters)
+            logger.info(f"Database returned {len(db_results)} results")
             
-            yield "Accessing database... "
-            await asyncio.sleep(0.5)
-
-            # --- Step 3: Execute REAL database query ---
-            try:
-                # Use the actual execute_query function from your db.py
-                db_results = execute_query(query_json)
-                logger.info(f"Database returned {len(db_results) if db_results else 0} results")
-                
-                if not db_results:
-                    yield "No data found for your query. Please try a different location or check the spelling."
-                    return
-                    
-            except Exception as db_error:
-                logger.error(f"Database query failed: {str(db_error)}")
-                yield f"Sorry, I encountered an error while accessing the database: {str(db_error)}"
-                return
-
-            # --- Step 4: Send structured data first (if needed) ---
-            if request.include_visualization and db_results:
-                viz_data = self._prepare_visualization(db_results, request.query)
-                yield f"data: {json.dumps(viz_data)}\n\n"
-                await asyncio.sleep(0.5)
-
-            # --- Step 5: Generate and stream the final natural language response ---
-            yield "Generating response... "
-            await asyncio.sleep(0.5)
-            
-            # Use the real data for response generation
+            # Step 3: Generate natural language response
             response_text = get_english_from_data(request.query, db_results)
             
             # Stream word by word for a real-time effect
