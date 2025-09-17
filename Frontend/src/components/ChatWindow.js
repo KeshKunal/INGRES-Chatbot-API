@@ -10,11 +10,10 @@ const ChatWindow = ({ messages, isLoading, loadingStatus, onSendMessage }) => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, loadingStatus]);
 
-  // Helper function to get appropriate icon and animation for different statuses
   const getStatusIcon = (status) => {
     const statusLower = status.toLowerCase();
     
-    if (statusLower.includes('analyzing') || statusLower.includes('processing query')) {
+    if (statusLower.includes('analyzing') || statusLower.includes('query') || statusLower.includes('intelligence')) {
       return { icon: '🔍', animation: 'animate-pulse', className: 'analyzing' };
     } else if (statusLower.includes('fetching') || statusLower.includes('retrieving') || statusLower.includes('database')) {
       return { icon: '📊', animation: 'animate-bounce', className: 'processing' };
@@ -27,6 +26,8 @@ const ChatWindow = ({ messages, isLoading, loadingStatus, onSendMessage }) => {
     }
   };
 
+  const statusInfo = loadingStatus ? getStatusIcon(loadingStatus) : null;
+
   return (
     <main className="chat-window">
       {messages.map((msg) => (
@@ -37,16 +38,23 @@ const ChatWindow = ({ messages, isLoading, loadingStatus, onSendMessage }) => {
       )}
       {(isLoading || loadingStatus) && (
         <>
-          {loadingStatus ? (
-            <div className={`loading-container ${getStatusIcon(loadingStatus).className}`}>
-              <div className={`loading-icon ${getStatusIcon(loadingStatus).animation}`}>
-                {getStatusIcon(loadingStatus).icon}
+          {statusInfo ? (
+            // --- Crucial Change: Apply 'message bot' classes for consistent styling ---
+            <div className="message bot loading-message"> 
+              <img src="/images/bot-avatar.png" alt="Bot Avatar" className="message-avatar bot-avatar" />
+              <div className={`message-content loading-container ${statusInfo.className}`}>
+                <div className={`loading-icon ${statusInfo.animation}`}>
+                  {statusInfo.icon}
+                </div>
+                <div className="loading-text">{loadingStatus}</div>
               </div>
-              <div className="loading-text">{loadingStatus}</div>
             </div>
           ) : (
-            <div className="loading-container">
-              <TypingIndicator />
+            <div className="message bot loading-message"> {/* Also wrap TypingIndicator like a bot message */}
+              <img src="/path/to/bot-avatar.png" alt="Bot Avatar" className="message-avatar bot-avatar" />
+              <div className="message-content"> {/* Use message-content for consistent padding/width */}
+                <TypingIndicator />
+              </div>
             </div>
           )}
         </>
