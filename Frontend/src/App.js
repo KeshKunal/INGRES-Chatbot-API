@@ -24,6 +24,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState('light');
   const [isToolsVisible, setIsToolsVisible] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
 
   useEffect(() => {
     localStorage.setItem('chatMessages', JSON.stringify(messages));
@@ -48,6 +49,7 @@ function App() {
   
   const handleNewChat = () => {
     setMessages([initialMessage]);
+    setLoadingStatus('');
     localStorage.removeItem('chatMessages');
   };
 
@@ -61,7 +63,11 @@ function App() {
 
     const handleChunk = (chunk) => {
       if (typeof chunk === 'object') {
-        if (chunk.type === 'error') {
+        if (chunk.type === 'status') {
+          // Handle status updates for loading indicator
+          setLoadingStatus(chunk.message);
+        } else if (chunk.type === 'error') {
+          setLoadingStatus('');
           setMessages(prev =>
             prev.map(msg =>
               msg.id === botMessageId
@@ -70,6 +76,7 @@ function App() {
             )
           );
         } else if (chunk.type === 'graph') {
+          setLoadingStatus('');
           setMessages(prev =>
             prev.map(msg =>
               msg.id === botMessageId
@@ -87,6 +94,7 @@ function App() {
           );
         } else {
           // Handle other object types
+          setLoadingStatus('');
           setMessages(prev =>
             prev.map(msg =>
               msg.id === botMessageId
@@ -96,11 +104,12 @@ function App() {
           );
         }
       } else {
-        // Handle plain text chunks
+        // Handle plain text chunks (final response)
+        setLoadingStatus('');
         setMessages(prev =>
           prev.map(msg =>
             msg.id === botMessageId
-              ? { ...msg, text: msg.text + chunk }
+              ? { ...msg, text: chunk }
               : msg
           )
         );
@@ -122,6 +131,7 @@ function App() {
       <ChatWindow 
         messages={messages} 
         isLoading={isLoading}
+        loadingStatus={loadingStatus}
         onSendMessage={handleSendMessage}
       />
 

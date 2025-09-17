@@ -7,7 +7,7 @@ const SuggestedQuestions = ({ onQuestionClick }) => {
     "Show me groundwater extraction trends in Kolar",
     "Which districts are in the 'Over-Exploited' category in goa?",
     "What is the annual groundwater recharge in Chennai?",
-    "Compare groundwater levels between 2020 and 2023"
+    "Can you give me the ground water data of delhi highlighiting the critical parameters"
   ];
 
   return (

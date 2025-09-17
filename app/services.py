@@ -16,26 +16,30 @@ class ChatService:
         logger.info(f"Processing query: {request.query}")
         
         try:
-            # --- Stream Step 1: Acknowledge and think ---
-            yield "Analyzing your query... "
-            await asyncio.sleep(0.5)
+            # Send status updates that won't be included in final response
+            yield "data: {\"type\": \"status\", \"message\": \"Analyzing your query with AI intelligence...\"}\n\n"
+            await asyncio.sleep(0.3)
 
             # --- Step 2: Convert natural language to structured query ---
             query_json = get_json_from_query(request.query)
             logger.info(f"Generated query JSON: {query_json}")
+            
+            yield "data: {\"type\": \"status\", \"message\": \"Fetching groundwater data from database...\"}\n\n"
+            await asyncio.sleep(0.2)
             
             # Step 2: Execute database query with filters
             filters = query_json.get('filters', {}) if query_json else {}
             db_results = execute_query(filters)
             logger.info(f"Database returned {len(db_results)} results")
             
+            yield "data: {\"type\": \"status\", \"message\": \"Preparing comprehensive response...\"}\n\n"
+            await asyncio.sleep(0.2)
+            
             # Step 3: Generate natural language response
             response_text = get_english_from_data(request.query, db_results)
             
-            # Stream word by word for a real-time effect
-            for word in response_text.split():
-                yield f"{word} "
-                await asyncio.sleep(0.05)
+            # Send the complete response at once (clean, without processing messages)
+            yield response_text
 
         except Exception as e:
             logger.error(f"Error processing query: {str(e)}")
