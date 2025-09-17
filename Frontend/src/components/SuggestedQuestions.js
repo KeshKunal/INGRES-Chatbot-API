@@ -3,10 +3,10 @@ import './SuggestedQuestions.css';
 
 const SuggestedQuestions = ({ onQuestionClick }) => {
   const questions = [
-    "What is the groundwater level in Karnataka?",
-    "Show me groundwater extraction trends in Punjab",
-    "Which districts are in the 'Over-Exploited' category?",
-    "What is the annual groundwater recharge in Gujarat?",
+    "What is the groundwater level in Bengaluru South, Karnataka?",
+    "Show me groundwater extraction trends in Kolar",
+    "Which districts are in the 'Over-Exploited' category in goa?",
+    "What is the annual groundwater recharge in Chennai?",
     "Compare groundwater levels between 2020 and 2023"
   ];
 
