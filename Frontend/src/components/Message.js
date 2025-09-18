@@ -173,6 +173,11 @@ const Message = ({ message, isProcessing }) => {
     return formatGroundwaterData(message.text);
   };
 
+  const showCopyButton = message.sender === 'bot' && 
+                        message.text && 
+                        message.text.trim().length > 0 && 
+                        !message.text.endsWith('...');
+
   if (isProcessing) {
     return (
       <div className="message bot-message">
@@ -195,7 +200,7 @@ const Message = ({ message, isProcessing }) => {
       />
       <div className="message-content">
         {renderContent()}
-        {!isUser && (
+        {!isUser && showCopyButton && (
           <button 
             className="copy-btn" 
             onClick={handleCopy}

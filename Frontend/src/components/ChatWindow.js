@@ -39,7 +39,6 @@ const ChatWindow = ({ messages, isLoading, loadingStatus, onSendMessage }) => {
       {(isLoading || loadingStatus) && (
         <>
           {statusInfo ? (
-            // --- Crucial Change: Apply 'message bot' classes for consistent styling ---
             <div className="message bot loading-message"> 
               <img src="/images/bot-avatar.png" alt="Bot Avatar" className="message-avatar bot-avatar" />
               <div className={`message-content loading-container ${statusInfo.className}`}>
