@@ -1,8 +1,3 @@
-import os
-import requests
-import json
-from dotenv import load_dotenv
-
 # --- PART 1: SETUP ---
 
 import os
