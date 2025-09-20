@@ -39,7 +39,8 @@ class ChatService:
                 
                 # Step 2: Execute database query with filters
                 filters = query_json.get('filters', {})
-                db_results = execute_query(filters)
+                fields = query_json.get('fields', [])
+                db_results = execute_query(fields, filters)
                 logger.info(f"Database returned {len(db_results)} results")
                 
                 yield "data: {\"type\": \"status\", \"message\": \"Preparing comprehensive response...\"}\n\n"

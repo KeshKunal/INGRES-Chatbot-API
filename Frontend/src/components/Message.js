@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { Bar, Line, Pie } from 'react-chartjs-2';
 import './Message.css';
 import {
@@ -131,6 +132,11 @@ const Message = ({ message, isProcessing }) => {
       );
     }
 
+    // Use ReactMarkdown for bot messages
+    if (message.sender === 'bot') {
+      return <ReactMarkdown>{message.text}</ReactMarkdown>;
+    }
+    
     if (message.type === 'visualization' && message.data) {
       const options = {
         responsive: true,

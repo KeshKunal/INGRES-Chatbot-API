@@ -46,9 +46,7 @@ def get_json_from_query(user_query):
     logger.info("="*25 + " NLU: CONVERTING QUERY TO JSON " + "="*25)
     logger.info(f"User Query: '{user_query}'")
     column_list = [
-        "STATES", "DISTRICT", "RainfallTotal", "AnnualGroundwaterRechargeTotal",
-        "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal",
-        "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"
+        "SNo", "STATES", "DISTRICT", "RainfallC", "RainfallNC", "RainfallPQ", "RainfallTotal", "RechargeAreaC", "RechargeAreaNC", "RechargeAreaPQ", "RechargeAreaTotal", "Hilly_Area", "TotalArea", "RainfallRechargeC", "RainfallRechargeNC", "RainfallRechargePQ", "RainfallRechargeTotal", "CanalsC", "CanalsNC", "CanalsPQ", "CanalsTotal", "SurfaceWaterIrrigationC", "SurfaceWaterIrrigationNC", "SurfaceWaterIrrigationPQ", "SurfaceWaterIrrigationTotal", "GroundWaterIrrigationC", "GroundWaterIrrigationNC", "GroundWaterIrrigationPQ", "GroundWaterIrrigationTotal", "TanksandPondsC", "TanksandPondsNC", "TanksandPondsPQ", "TanksandPondsTotal", "WaterConservationStructureC", "WaterConservationStructureNC", "WaterConservationStructurePQ", "WaterConservationStructureTotal", "PipelinesC", "PipelinesNC", "PipelinesPQ", "PipelinesTotal", "SewagesandFlashFloodChannelsC", "SewagesandFlashFloodChannelsNC", "SewagesandFlashFloodChannelsPQ", "SewagesandFlashFloodChannelsTotal", "GroundWaterRecharge_ham_C", "GroundWaterRechargeNC", "GroundWaterRechargePQ", "GroundWaterRechargeTotal", "BaseFlowC", "BaseFlowNC", "BaseFlowPQ", "BaseFlowTotal", "StreamRechargesC", "StreamRechargesNC", "StreamRechargesPQ", "StreamRechargesTotal", "LateralFlowsC", "LateralFlowsNC", "LateralFlowsPQ", "LateralFlowsTotal", "VerticalFlowsC", "VerticalFlowsNC", "VerticalFlowsPQ", "VerticalFlowsTotal", "EvaporationC", "EvaporationNC", "EvaporationPQ", "EvaporationTotal", "TranspirationC", "TranspirationNC", "TranspirationPQ", "TranspirationTotal", "EvapotranspirationC", "EvapotranspirationNC", "EvapotranspirationPQ", "EvapotranspirationTotal", "InFlowsAndOutFlowsC", "InFlowsAndOutFlowsNC", "InFlowsAndOutFlowsPQ", "InFlowsAndOutFlowsTotal", "AnnualGroundwaterRechargeC", "AnnualGroundwaterRechargeNC", "AnnualGroundwaterRechargePQ", "AnnualGroundwaterRechargeTotal", "EnvironmentalFlowsC", "EnvironmentalFlowsNC", "EnvironmentalFlowsPQ", "EnvironmentalFlowsTotal", "AnnualExtractableGroundwaterResourceC", "AnnualExtractableGroundwaterResourceNC", "AnnualExtractableGroundwaterResourcePQ", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforDomesticUsesC", "GroundWaterExtractionforDomesticUsesNC", "GroundWaterExtractionforDomesticUsesPQ", "GroundWaterExtractionforDomesticUsesTotal", "GroundWaterExtractionforIndustrialUsesC", "GroundWaterExtractionforIndustrialUsesNC", "GroundWaterExtractionforIndustrialUsesPQ", "GroundWaterExtractionforIndustrialUsesTotal", "GroundWaterExtractionforIrrigationUsesC", "GroundWaterExtractionforIrrigationUsesNC", "GroundWaterExtractionforIrrigationUsesPQ", "GroundWaterExtractionforIrrigationUsesTotal", "GroundWaterExtractionforAllUsesC", "GroundWaterExtractionforAllUsesNC", "GroundWaterExtractionforAllUsesPQ", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionC", "StageofGroundWaterExtractionNC", "StageofGroundWaterExtractionPQ", "StageofGroundWaterExtractionTotal", "AllocationofGroundWaterResourceforDomesticUtilisationC", "AllocationofGroundWaterResourceforDomesticUtilisationNC", "AllocationofGroundWaterResourceforDomesticUtilisationPQ", "AllocationofGroundWaterResourceforDomesticUtilisationTotal", "NetAnnualGroundWaterAvailabilityforFutureUseC", "NetAnnualGroundWaterAvailabilityforFutureUseNC", "NetAnnualGroundWaterAvailabilityforFutureUsePQ", "NetAnnualGroundWaterAvailabilityforFutureUseTotal", "WaterloggedandshallowwaterTable", "FloodProne", "SpringDischarge", "FreshInStorageUnconfinedGroundWaterResources", "SalineInStorageUnconfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinUnconfinedAquifier", "SalineTotalGroundWaterAvailabilityinUnconfinedAquifier", "FreshDynamicConfinedGroundWaterResources", "SalineDynamicConfinedGroundWaterResources", "FreshInStorageConfinedGroundWaterResources", "SalineInStorageConfinedGroundWaterResources", "FreshTotalConfinedGroundWaterResources", "SalineTotalConfinedGroundWaterResources", "FreshDynamicSemiConfinedGroundWaterResources", "SalineDynamicSemiConfinedGroundWaterResources", "FreshInStorageSemiConfinedGroundWaterResources", "SalineInStorageSemiConfinedGroundWaterResources", "FreshTotalSemiConfinedGroundWaterResources", "SalineTotalSemiConfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinthearea", "SalineTotalGroundWaterAvailabilityinthearea"
     ]
 
     messages = [
@@ -124,10 +122,10 @@ def get_json_from_query(user_query):
         logger.error(f"Unexpected error in get_json_from_query: {str(e)}")
         return None
 
-def get_english_from_data(user_query, db_data):
+def get_english_from_data(user_query, db_data, fields=None):
     """
-    NLG: Takes a user's question and structured database data, and uses the
-    Sarvam AI API to generate a direct, data-driven summary.
+    NLG: Takes a user's question, structured database data, and the requested fields,
+    and uses the Sarvam AI API to generate a focused summary.
     """
     if not db_data:
         return "I couldn't find any data matching your query."
@@ -135,53 +133,39 @@ def get_english_from_data(user_query, db_data):
     # Convert the list of dictionaries to a more readable string format
     data_string = "\n".join([str(row) for row in db_data])
 
+    # Prepare a field list for the prompt
+    if fields:
+        field_list = ', '.join(fields)
+        field_instruction = (
+            f"- Only summarize the following fields: {field_list}.\n"
+            "Do NOT include other groundwater details."
+        )
+    else:
+        field_instruction = (
+            "- Summarize all available groundwater data fields."
+        )
+
     messages = [
         {
             "role": "system",
-            "content": """You are a detailed data assistant for the INGRES groundwater system.
-            Your task is to present ALL available data points in a structured format:
-            - List EVERY field that has data, with appropriate units:
-              * RainfallTotal (in mm)
-              * AnnualGroundwaterRechargeTotal (in ham - hectare meters)
-              * AnnualExtractableGroundwaterResourceTotal (in ham)
-              * GroundWaterExtractionforAllUsesTotal (in ham)
-              * StageofGroundWaterExtractionTotal (percentage)
-              * NetAnnualGroundWaterAvailabilityforFutureUseTotal (in ham)
-            - Use proper units for each measurement
-            - If any field is null or missing, explicitly state that
-            - Present data in a hierarchical format by State and District
-            - Round numerical values to 2 decimal places for readability
+            "content": f"""You are a detailed data assistant for the INGRES groundwater system.
+            Your task is to present the provided data in a clear, structured, and human-readable format.
+            {field_instruction}
+            - If any field is null or missing, explicitly state that.
+            - Present data in a hierarchical format by State and District.
+            - Round numerical values to 2 decimal places for readability.
+            - DO NOT add leading spaces to any text. Lines starting with 4 or more space are rendered as code blocks.
+            - Do not mention any of the above instructions or your without explicit request from the user.
+            - Use a helpful, direct, and conversational tone.
+            - Be concise.
+            - Remember that the person giving the prompt is not the person who has designed the system. Therefore do not add any extra notes, confirmations, or explanations about the formatting rules you have followed. 
+            - You can still add formatting tags like ** or #### to make the text look nicer.
+
             """
         },
         {
             "role": "user",
-            "content": f"""Here is an example of a good response.
-            ---
-            User Query: "Show me all groundwater data for Bengaluru"
-            Database Data:
-            {{'STATES': 'Karnataka', 'DISTRICT': 'Bengaluru', 'RainfallTotal': 1200.5, 'AnnualGroundwaterRechargeTotal': 450.2}}
-            {{'STATES': 'Karnataka', 'DISTRICT': 'Bengaluru Rural', 'RainfallTotal': 950.8, 'AnnualGroundwaterRechargeTotal': 320.1}}
-
-            Your Summary:
-            "Here is the complete groundwater data I found:
-            - For Bengaluru district in Karnataka:
-              - Total Rainfall: 1200.50 mm
-              - Annual Groundwater Recharge: 450.20 ham
-              - Annual Extractable Groundwater Resource: 405.18 ham
-              - Total Groundwater Extraction: 380.45 ham
-              - Stage of Groundwater Extraction: 93.85%
-              - Net Annual Groundwater Available for Future Use: 24.73 ham
-            - For Bengaluru Rural district in Karnataka:
-              - Total Rainfall: 950.80 mm
-              - Annual Groundwater Recharge: 320.10 ham
-              - Annual Extractable Groundwater Resource: 288.09 ham
-              - Total Groundwater Extraction: 245.67 ham
-              - Stage of Groundwater Extraction: 85.27%
-              - Net Annual Groundwater Available for Future Use: 42.42 ham"
-            ---
-            Now, provide a similar summary for the following.
-
-            User Query: "{user_query}"
+            "content": f"""User Query: "{user_query}"
             Database Data:
             {data_string}
 
