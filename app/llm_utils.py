@@ -37,27 +37,36 @@ headers = {
 
 # --- PART 2: CORE LLM FUNCTIONS ---
 
-def get_json_from_query(user_query):
+def analyze_query_intent(user_query: str) -> dict:
     """
-    NLU: Takes a user's question and uses the Sarvam AI API to convert it
-    into a structured JSON object or provide a direct natural language response.
-    Returns a dict if a query is understood, or a string for conversational replies.
+    NLU: Analyzes the user's query to determine their intent and extracts necessary parameters.
+
+    Returns a dictionary with an 'intent' key, which can be:
+    - 'data_query': For database lookups, includes a 'query' sub-dictionary.
+    - 'conversation': For conversational replies, includes a 'response' string.
+    - 'unknown': For queries that cannot be understood.
     """
-    logger.info("="*25 + " NLU: CONVERTING QUERY TO JSON " + "="*25)
+    logger.info("="*25 + " NLU: ANALYZING QUERY INTENT " + "="*25)
     logger.info(f"User Query: '{user_query}'")
+    
+    # This column list can be removed in the future if the model is fine-tuned
+    # or if a more advanced RAG system is implemented for schema detection.
     column_list = [
         "SNo", "STATES", "DISTRICT", "RainfallC", "RainfallNC", "RainfallPQ", "RainfallTotal", "RechargeAreaC", "RechargeAreaNC", "RechargeAreaPQ", "RechargeAreaTotal", "Hilly_Area", "TotalArea", "RainfallRechargeC", "RainfallRechargeNC", "RainfallRechargePQ", "RainfallRechargeTotal", "CanalsC", "CanalsNC", "CanalsPQ", "CanalsTotal", "SurfaceWaterIrrigationC", "SurfaceWaterIrrigationNC", "SurfaceWaterIrrigationPQ", "SurfaceWaterIrrigationTotal", "GroundWaterIrrigationC", "GroundWaterIrrigationNC", "GroundWaterIrrigationPQ", "GroundWaterIrrigationTotal", "TanksandPondsC", "TanksandPondsNC", "TanksandPondsPQ", "TanksandPondsTotal", "WaterConservationStructureC", "WaterConservationStructureNC", "WaterConservationStructurePQ", "WaterConservationStructureTotal", "PipelinesC", "PipelinesNC", "PipelinesPQ", "PipelinesTotal", "SewagesandFlashFloodChannelsC", "SewagesandFlashFloodChannelsNC", "SewagesandFlashFloodChannelsPQ", "SewagesandFlashFloodChannelsTotal", "GroundWaterRecharge_ham_C", "GroundWaterRechargeNC", "GroundWaterRechargePQ", "GroundWaterRechargeTotal", "BaseFlowC", "BaseFlowNC", "BaseFlowPQ", "BaseFlowTotal", "StreamRechargesC", "StreamRechargesNC", "StreamRechargesPQ", "StreamRechargesTotal", "LateralFlowsC", "LateralFlowsNC", "LateralFlowsPQ", "LateralFlowsTotal", "VerticalFlowsC", "VerticalFlowsNC", "VerticalFlowsPQ", "VerticalFlowsTotal", "EvaporationC", "EvaporationNC", "EvaporationPQ", "EvaporationTotal", "TranspirationC", "TranspirationNC", "TranspirationPQ", "TranspirationTotal", "EvapotranspirationC", "EvapotranspirationNC", "EvapotranspirationPQ", "EvapotranspirationTotal", "InFlowsAndOutFlowsC", "InFlowsAndOutFlowsNC", "InFlowsAndOutFlowsPQ", "InFlowsAndOutFlowsTotal", "AnnualGroundwaterRechargeC", "AnnualGroundwaterRechargeNC", "AnnualGroundwaterRechargePQ", "AnnualGroundwaterRechargeTotal", "EnvironmentalFlowsC", "EnvironmentalFlowsNC", "EnvironmentalFlowsPQ", "EnvironmentalFlowsTotal", "AnnualExtractableGroundwaterResourceC", "AnnualExtractableGroundwaterResourceNC", "AnnualExtractableGroundwaterResourcePQ", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforDomesticUsesC", "GroundWaterExtractionforDomesticUsesNC", "GroundWaterExtractionforDomesticUsesPQ", "GroundWaterExtractionforDomesticUsesTotal", "GroundWaterExtractionforIndustrialUsesC", "GroundWaterExtractionforIndustrialUsesNC", "GroundWaterExtractionforIndustrialUsesPQ", "GroundWaterExtractionforIndustrialUsesTotal", "GroundWaterExtractionforIrrigationUsesC", "GroundWaterExtractionforIrrigationUsesNC", "GroundWaterExtractionforIrrigationUsesPQ", "GroundWaterExtractionforIrrigationUsesTotal", "GroundWaterExtractionforAllUsesC", "GroundWaterExtractionforAllUsesNC", "GroundWaterExtractionforAllUsesPQ", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionC", "StageofGroundWaterExtractionNC", "StageofGroundWaterExtractionPQ", "StageofGroundWaterExtractionTotal", "AllocationofGroundWaterResourceforDomesticUtilisationC", "AllocationofGroundWaterResourceforDomesticUtilisationNC", "AllocationofGroundWaterResourceforDomesticUtilisationPQ", "AllocationofGroundWaterResourceforDomesticUtilisationTotal", "NetAnnualGroundWaterAvailabilityforFutureUseC", "NetAnnualGroundWaterAvailabilityforFutureUseNC", "NetAnnualGroundWaterAvailabilityforFutureUsePQ", "NetAnnualGroundWaterAvailabilityforFutureUseTotal", "WaterloggedandshallowwaterTable", "FloodProne", "SpringDischarge", "FreshInStorageUnconfinedGroundWaterResources", "SalineInStorageUnconfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinUnconfinedAquifier", "SalineTotalGroundWaterAvailabilityinUnconfinedAquifier", "FreshDynamicConfinedGroundWaterResources", "SalineDynamicConfinedGroundWaterResources", "FreshInStorageConfinedGroundWaterResources", "SalineInStorageConfinedGroundWaterResources", "FreshTotalConfinedGroundWaterResources", "SalineTotalConfinedGroundWaterResources", "FreshDynamicSemiConfinedGroundWaterResources", "SalineDynamicSemiConfinedGroundWaterResources", "FreshInStorageSemiConfinedGroundWaterResources", "SalineInStorageSemiConfinedGroundWaterResources", "FreshTotalSemiConfinedGroundWaterResources", "SalineTotalSemiConfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinthearea", "SalineTotalGroundWaterAvailabilityinthearea"
     ]
-
+    
+    # ADD A NEW INTENT HERE!
     messages = [
         {
             "role": "system",
-            "content": f"""You are a highly precise assistant for the INGRES system. Your task is to analyze a user's query and respond in one of two ways:
-            1. If the query is about groundwater data, convert it into a structured JSON.
-               - The JSON must have 'fields' (a list of columns) and 'filters' (a dictionary for 'state' and 'district').
-               - Extract state and district names accurately.
-               - If the user asks for general 'data', include all relevant numeric columns: {', '.join(column_list)}.
-            2. If the query is NOT about groundwater data (e.g., a greeting, nonsense), provide a brief, helpful, natural language response. DO NOT output JSON in this case.
+            "content": f"""You are a highly precise assistant for the INGRES system. Your task is to analyze a user's query and convert it into a structured JSON object that defines the user's intent.
+
+            The JSON output MUST have a key named "intent". Possible values for "intent" are:
+            1. "data_query": If the user is asking for groundwater data. The JSON should also include a "query" object with "fields" and "filters".
+            2. "conversation": If the user is making a conversational remark (e.g., a greeting, nonsense). The JSON should also include a "response" key with a helpful string.
+
+            - If the intent is "data_query" and the user asks for general 'data', include all relevant numeric columns: {', '.join(column_list)}.
+            - Always return a valid JSON object.
             """
         },
         {
@@ -65,25 +74,22 @@ def get_json_from_query(user_query):
             "content": f"""Here are examples of how to process queries. Follow them exactly.
             ---
             Query: "Show me the rainfall and groundwater recharge for Bengaluru district"
-            {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}
-
-            Query: "What was the total groundwater extraction in Karnataka?"
-            {{"fields": ["GroundWaterExtractionforAllUsesTotal"], "filters": {{"state": "Karnataka"}}}}
+            {{"intent": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}}}
 
             Query: "groundwater data for Bengaluru South, Karnataka"
-            {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "Karnataka", "district": "Bengaluru South"}}}}
+            {{"intent": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "Karnataka", "district": "Bengaluru South"}}}}}}
 
             Query: "hello there"
-            Hello! How can I help you with groundwater data today?
+            {{"intent": "conversation", "response": "Hello! How can I help you with groundwater data today?"}}
 
             Query: "meh"
-            I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?
+            {{"intent": "conversation", "response": "I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?"}}
             ---
             Now, process this query: "{user_query}" """
         }
     ]
 
-    payload = { "model": MODEL_IDENTIFIER, "messages": messages, "temperature": 0.1, "max_tokens": 3000 }
+    payload = { "model": MODEL_IDENTIFIER, "messages": messages, "temperature": 0.1, "max_tokens": 7168 }
 
     try:
         log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
@@ -91,36 +97,25 @@ def get_json_from_query(user_query):
         response = requests.post(API_URL, headers=headers, json=payload)
         response.raise_for_status()
         api_output = response.json()
-        # Create a copy for logging and remove the verbose 'usage' block
+        
         log_output = api_output.copy()
         log_output.pop('usage', None)
         logger.info("\n--- SARVAM API RESPONSE (NLU) ---\n" + json.dumps(log_output, indent=2))
         
         generated_content = api_output['choices'][0]['message']['content'].strip()
+        
+        cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
+        parsed_json = json.loads(cleaned_json)
+        logger.info("\n--- SUCCESSFULLY PARSED INTENT JSON ---\n" + json.dumps(parsed_json, indent=2))
+        logger.info("="*70)
+        return parsed_json
 
-        # Try to parse as JSON first. If it fails, assume it's a natural language response.
-        try:
-            cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
-            parsed_json = json.loads(cleaned_json)
-            logger.info("\n--- SUCCESSFULLY PARSED JSON ---\n" + json.dumps(parsed_json, indent=2))
-            logger.info("="*70)
-            return parsed_json
-        except json.JSONDecodeError:
-            logger.info(f"Received natural language response (not JSON): '{generated_content}'")
-            logger.info("="*70)
-            return generated_content
-
-    except requests.exceptions.RequestException as e:
-        logger.error(f"API request failed: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            logger.error(f"API error response: {e.response.text}")
-        return None
-    except (KeyError, IndexError) as e:
-        logger.error(f"Failed to parse API response structure: {e}")
-        return None
+    except (requests.exceptions.RequestException, KeyError, IndexError, json.JSONDecodeError) as e:
+        logger.error(f"NLU analysis failed: {e}")
+        return {"intent": "error", "details": str(e)}
     except Exception as e:
-        logger.error(f"Unexpected error in get_json_from_query: {str(e)}")
-        return None
+        logger.error(f"Unexpected error in analyze_query_intent: {str(e)}")
+        return {"intent": "error", "details": "An unexpected error occurred during query analysis."}
 
 def get_english_from_data(user_query, db_data, fields=None):
     """
@@ -178,7 +173,7 @@ def get_english_from_data(user_query, db_data, fields=None):
         "model": MODEL_IDENTIFIER,
         "messages": messages,
         "temperature": 0.1,
-        "max_tokens": 1000
+        "max_tokens": 7168
     }
 
     try:
