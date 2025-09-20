@@ -13,7 +13,6 @@ A FastAPI-based backend for the INGRES AI Chatbot, designed to serve as a virtua
 
 ```
 ingres-chatbot-api/
-├── .env
 ├── .gitignore
 ├── README.md
 ├── app
@@ -56,7 +55,8 @@ git checkout develop
 
 ```sh
 python -m venv venv
-venv\Scripts\activate  # On Windows
+.\.venv\Scripts\activate # On Windows
+
 ```
 
 ### 3. Install dependencies
