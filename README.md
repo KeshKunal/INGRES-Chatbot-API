@@ -56,6 +56,7 @@ git checkout develop
 ```sh
 python -m venv venv
 .\.venv\Scripts\activate # On Windows
+
 ```
 
 ### 3. Install dependencies

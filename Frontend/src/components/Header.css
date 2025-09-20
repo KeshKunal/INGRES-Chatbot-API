@@ -1,0 +1,132 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 60px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo {
+  height: 32px;
+  object-fit: contain;
+}
+
+.logo.circular {
+  border-radius: 50%;
+  height: 32px;
+  width: 32px;
+}
+
+.logo.small-circular {
+  height: 24px;
+  width: 24px;
+  border-radius: 50%;
+}
+
+.new-chat-btn,
+.theme-toggle-btn,
+.language-btn {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.new-chat-btn:hover,
+.theme-toggle-btn:hover,
+.language-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+h1 {
+  font-size: 1.1rem;
+  margin: 0;
+  color: #333;
+  font-weight: 500;
+}
+
+.language-selector {
+  position: relative;
+}
+
+.language-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  padding: 0.5rem;
+  min-width: 120px;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  z-index: 1100;
+}
+
+.language-option {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #333;
+  transition: background-color 0.2s;
+}
+
+.language-option:hover {
+  background-color: rgba(0,0,0,0.05);
+}
+
+/* Dark theme support */
+[data-theme='dark'] .header {
+  background: #1a1a1a;
+}
+
+[data-theme='dark'] h1 {
+  color: #fff;
+}
+
+[data-theme='dark'] .language-dropdown {
+  background: #2a2a2a;
+}
+
+[data-theme='dark'] .language-option {
+  color: #fff;
+}
+
+[data-theme='dark'] .language-option:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+[data-theme='dark'] .new-chat-btn:hover,
+[data-theme='dark'] .theme-toggle-btn:hover,
+[data-theme='dark'] .language-btn:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
