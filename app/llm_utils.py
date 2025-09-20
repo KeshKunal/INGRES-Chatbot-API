@@ -40,9 +40,11 @@ headers = {
 def get_json_from_query(user_query):
     """
     NLU: Takes a user's question and uses the Sarvam AI API to convert it
-    into a structured JSON object, including which fields to select.
+    into a structured JSON object or provide a direct natural language response.
+    Returns a dict if a query is understood, or a string for conversational replies.
     """
-    logger.info(f"Attempting to convert query to JSON: {user_query}")
+    logger.info("="*25 + " NLU: CONVERTING QUERY TO JSON " + "="*25)
+    logger.info(f"User Query: '{user_query}'")
     column_list = [
         "STATES", "DISTRICT", "RainfallTotal", "AnnualGroundwaterRechargeTotal",
         "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal",
@@ -52,51 +54,71 @@ def get_json_from_query(user_query):
     messages = [
         {
             "role": "system",
-            "content": f"""You are a highly precise assistant for the INGRES system. Your only task is to convert a user's query into a structured JSON.
-            - The JSON must have 'fields' (a list of columns) and 'filters' (a dictionary for 'state' and 'district').
-            - Extract the state and district names accurately, even if they have multiple words.
-            - If the user asks for general 'data', include all relevant numeric columns in the 'fields' list.
-            - Relevant columns are: {', '.join(column_list)}.
-            - Only return a valid JSON object.
+            "content": f"""You are a highly precise assistant for the INGRES system. Your task is to analyze a user's query and respond in one of two ways:
+            1. If the query is about groundwater data, convert it into a structured JSON.
+               - The JSON must have 'fields' (a list of columns) and 'filters' (a dictionary for 'state' and 'district').
+               - Extract state and district names accurately.
+               - If the user asks for general 'data', include all relevant numeric columns: {', '.join(column_list)}.
+            2. If the query is NOT about groundwater data (e.g., a greeting, nonsense), provide a brief, helpful, natural language response. DO NOT output JSON in this case.
             """
         },
         {
             "role": "user",
-            "content": f"""Here are examples of how to convert queries. Follow them exactly.
+            "content": f"""Here are examples of how to process queries. Follow them exactly.
             ---
             Query: "Show me the rainfall and groundwater recharge for Bengaluru district"
-            JSON: {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}
+            {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}
 
             Query: "What was the total groundwater extraction in Karnataka?"
-            JSON: {{"fields": ["GroundWaterExtractionforAllUsesTotal"], "filters": {{"state": "Karnataka"}}}}
+            {{"fields": ["GroundWaterExtractionforAllUsesTotal"], "filters": {{"state": "Karnataka"}}}}
 
             Query: "groundwater data for Bengaluru South, Karnataka"
-            JSON: {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "Karnataka", "district": "Bengaluru South"}}}}
+            {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "Karnataka", "district": "Bengaluru South"}}}}
+
+            Query: "hello there"
+            Hello! How can I help you with groundwater data today?
+
+            Query: "meh"
+            I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?
             ---
-            Now, convert this query: "{user_query}" """
+            Now, process this query: "{user_query}" """
         }
     ]
 
     payload = { "model": MODEL_IDENTIFIER, "messages": messages, "temperature": 0.1, "max_tokens": 3000 }
 
     try:
-        logger.info(f"Sending request to Sarvam AI API with payload: {payload}")
+        log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
+        logger.info("\n--- SARVAM API REQUEST (NLU) ---\n" + log_payload)
         response = requests.post(API_URL, headers=headers, json=payload)
         response.raise_for_status()
         api_output = response.json()
-        logger.debug(f"API Response: {api_output}")
+        # Create a copy for logging and remove the verbose 'usage' block
+        log_output = api_output.copy()
+        log_output.pop('usage', None)
+        logger.info("\n--- SARVAM API RESPONSE (NLU) ---\n" + json.dumps(log_output, indent=2))
+        
         generated_content = api_output['choices'][0]['message']['content'].strip()
-        cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
-        parsed_json = json.loads(cleaned_json)
-        logger.info(f"Successfully parsed query into JSON: {parsed_json}")
-        return parsed_json
+
+        # Try to parse as JSON first. If it fails, assume it's a natural language response.
+        try:
+            cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
+            parsed_json = json.loads(cleaned_json)
+            logger.info("\n--- SUCCESSFULLY PARSED JSON ---\n" + json.dumps(parsed_json, indent=2))
+            logger.info("="*70)
+            return parsed_json
+        except json.JSONDecodeError:
+            logger.info(f"Received natural language response (not JSON): '{generated_content}'")
+            logger.info("="*70)
+            return generated_content
+
     except requests.exceptions.RequestException as e:
         logger.error(f"API request failed: {e}")
         if hasattr(e, 'response') and e.response is not None:
             logger.error(f"API error response: {e.response.text}")
         return None
-    except (KeyError, json.JSONDecodeError) as e:
-        logger.error(f"Failed to parse API response: {e}")
+    except (KeyError, IndexError) as e:
+        logger.error(f"Failed to parse API response structure: {e}")
         return None
     except Exception as e:
         logger.error(f"Unexpected error in get_json_from_query: {str(e)}")
@@ -176,15 +198,23 @@ def get_english_from_data(user_query, db_data):
     }
 
     try:
-        # Log the request
-        logger.info(f"Sending data-to-text request for query: {user_query}")
+        logger.info("="*25 + " NLG: GENERATING TEXT FROM DATA " + "="*25)
+        logger.info(f"User Query: '{user_query}'")
+        log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
+        logger.info("\n--- SARVAM API REQUEST (NLG) ---\n" + log_payload)
         response = requests.post(API_URL, headers=headers, json=payload)
         response.raise_for_status()
         api_output = response.json()
-        logger.debug(f"API Response: {api_output}")
+        # Create a copy for logging and remove the verbose 'usage' block
+        log_output = api_output.copy()
+        log_output.pop('usage', None)
+        logger.info("\n--- SARVAM API RESPONSE (NLG) ---\n" + json.dumps(log_output, indent=2))
         
         if 'choices' in api_output and len(api_output['choices']) > 0:
-            return api_output['choices'][0]['message']['content'].strip()
+            response_text = api_output['choices'][0]['message']['content'].strip()
+            logger.info("\n--- SUCCESSFULLY GENERATED RESPONSE ---\n" + response_text)
+            logger.info("="*70)
+            return response_text
         else:
             logger.error("API response missing 'choices' or empty choices array")
             return "I'm sorry, but I couldn't generate a proper summary from the data."
