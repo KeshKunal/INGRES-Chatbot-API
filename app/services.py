@@ -20,26 +20,42 @@ class ChatService:
             yield "data: {\"type\": \"status\", \"message\": \"Analyzing your query with AI intelligence...\"}\n\n"
             await asyncio.sleep(0.3)
 
-            # --- Step 2: Convert natural language to structured query ---
-            query_json = get_json_from_query(request.query)
-            logger.info(f"Generated query JSON: {query_json}")
+            # --- Step 1: Convert natural language to structured query or get a direct response ---
+            nlu_result = get_json_from_query(request.query)
+
+            # Case 1: The LLM returned a direct natural language response (not a query for data)
+            if isinstance(nlu_result, str):
+                logger.info("NLU returned a direct natural language response. Skipping database query.")
+                yield nlu_result
+                return  # End the process here
+
+            # Case 2: The LLM returned a valid JSON query for the database
+            if isinstance(nlu_result, dict):
+                query_json = nlu_result
+                logger.info(f"Generated query JSON: {query_json}")
+                
+                yield "data: {\"type\": \"status\", \"message\": \"Fetching groundwater data from database...\"}\n\n"
+                await asyncio.sleep(0.2)
+                
+                # Step 2: Execute database query with filters
+                filters = query_json.get('filters', {})
+                db_results = execute_query(filters)
+                logger.info(f"Database returned {len(db_results)} results")
+                
+                yield "data: {\"type\": \"status\", \"message\": \"Preparing comprehensive response...\"}\n\n"
+                await asyncio.sleep(0.2)
+                
+                # Step 3: Generate natural language response from the data
+                response_text = get_english_from_data(request.query, db_results)
+                
+                # Send the complete response at once
+                yield response_text
             
-            yield "data: {\"type\": \"status\", \"message\": \"Fetching groundwater data from database...\"}\n\n"
-            await asyncio.sleep(0.2)
-            
-            # Step 2: Execute database query with filters
-            filters = query_json.get('filters', {}) if query_json else {}
-            db_results = execute_query(filters)
-            logger.info(f"Database returned {len(db_results)} results")
-            
-            yield "data: {\"type\": \"status\", \"message\": \"Preparing comprehensive response...\"}\n\n"
-            await asyncio.sleep(0.2)
-            
-            # Step 3: Generate natural language response
-            response_text = get_english_from_data(request.query, db_results)
-            
-            # Send the complete response at once (clean, without processing messages)
-            yield response_text
+            # Case 3: The NLU step failed
+            else:
+                logger.error("NLU step failed to produce a valid JSON or string response.")
+                raise Exception("Failed to understand the query.")
+
 
         except Exception as e:
             logger.error(f"Error processing query: {str(e)}")
