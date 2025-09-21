@@ -111,6 +111,9 @@ def analyze_query_intent(user_query: str) -> dict:
             Query: "Compare the districts of goa and gujarat and find out which ones average annual recharge rate is more"
             {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"state": ["GOA", "GUJARAT"]}}}}}}]}}
 
+            Query: "List all districts in goa"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["STATES", "DISTRICT"], "filters": {{"state": "GOA"}}}}}}]}}
+
             Query: "hello there"
             {{"tasks": [{{"name": "conversation", "response": "Hello! How can I help you with groundwater data today?"}}]}}
 
@@ -132,12 +135,36 @@ def analyze_query_intent(user_query: str) -> dict:
         
         log_output = api_output.copy()
         log_output.pop('usage', None)
+
+        # Attempt to clean and parse the content for logging, if it's a JSON string
+        if 'choices' in log_output and len(log_output['choices']) > 0 and \
+           'message' in log_output['choices'][0] and 'content' in log_output['choices'][0]['message']:
+            
+            raw_llm_content = log_output['choices'][0]['message']['content'].strip()
+            cleaned_llm_content = raw_llm_content.replace('```json', '').replace('```', '').strip()
+            
+            try:
+                # If the content is a JSON string, parse it and replace the string with the parsed object
+                parsed_llm_content = json.loads(cleaned_llm_content)
+                log_output['choices'][0]['message']['content'] = parsed_llm_content
+            except json.JSONDecodeError:
+                # If not valid JSON, keep the original string content
+                pass
+
         logger.info("\n--- SARVAM API RESPONSE (NLU) ---\n" + json.dumps(log_output, indent=2))
         
-        generated_content = api_output['choices'][0]['message']['content'].strip()
-        
-        cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
-        parsed_json = json.loads(cleaned_json)
+        generated_content = api_output['choices'][0]['message']['content']
+
+        # If the content is a string, clean and parse it as JSON
+        if isinstance(generated_content, str):
+            cleaned_json = generated_content.replace('```json', '').replace('```', '').strip()
+            parsed_json = json.loads(cleaned_json)
+        # If it's already a dict, use it directly
+        elif isinstance(generated_content, dict):
+            parsed_json = generated_content
+        else:
+            raise ValueError("Unexpected type for LLM content: {}".format(type(generated_content)))
+
         logger.info("\n--- SUCCESSFULLY PARSED INTENT JSON ---\n" + json.dumps(parsed_json, indent=2))
         logger.info("="*70)
         return parsed_json
@@ -153,14 +180,13 @@ def get_english_from_data(user_query, db_data, fields=None):
     """
     NLG: Takes a user's question, structured database data, and the requested fields,
     and uses the Sarvam AI API to generate a focused summary.
+    Handles multi-part responses by requesting additional completions if needed.
     """
     if not db_data:
         return "I couldn't find any data matching your query."
 
-    # Convert the list of dictionaries to a more readable string format
     data_string = "\n".join([str(row) for row in db_data])
 
-    # Prepare a field list for the prompt
     if fields:
         field_list = ', '.join(fields)
         field_instruction = (
@@ -172,69 +198,91 @@ def get_english_from_data(user_query, db_data, fields=None):
             "- Summarize all available groundwater data fields."
         )
 
-    messages = [
-        {
-            "role": "system",
-            "content": f"""You are a data analysis assistant for the INGRES groundwater system.
-            Your primary task is to answer the user's query based *only* on the provided database data.
-            - First, analyze the user's query to understand their goal (e.g., simple data retrieval, comparison, calculation).
-            - If the user asks for a calculation (like 'difference', 'sum', 'total', 'average'), perform the calculation using the provided data and present the result clearly and concisely.
-            - If the user asks for a simple data listing, present the data in a clear, structured, and human-readable format.
-            {field_instruction}
-            - If data for a requested entity is not present in the provided data, explicitly state that.
-            - Round numerical values to 2 decimal places.
-            - Be concise and directly answer the user's question.
-            - Do not add extra notes or explanations about your formatting rules.
-            - Use Markdown formatting (e.g., **, ####) for clarity.
-            - DO NOT attempt to make tables using ASCII art. Use simple lists or Markdown tables if needed.
-            """
-        },
-        {
-            "role": "user",
-            "content": f"""User Query: "{user_query}"
-            Database Data:
-            {data_string}
-
-            Your Summary:
-            """
-        }
-    ]
-    
-    payload = {
-        "model": MODEL_IDENTIFIER,
-        "messages": messages,
-        "temperature": 0.1,
-        "max_tokens": 7168
+    system_message = {
+        "role": "system",
+        "content": f"""You are a data analysis assistant for the INGRES groundwater system.
+        Your primary task is to answer the user's query based *only* on the provided database data.
+        - First, analyze the user's query to understand their goal (e.g., simple data retrieval, comparison, calculation).
+        - If the user asks for a calculation (like 'difference', 'sum', 'total', 'average'), perform the calculation using the provided data and present the result clearly and concisely.
+        - If the user asks for a simple data listing, present the data in a clear, structured, and human-readable format.
+        {field_instruction}
+        - If data for a requested entity is not present in the provided data, explicitly state that.
+        - Round numerical values to 2 decimal places.
+        - Be concise and directly answer the user's question.
+        - Do not add extra notes or explanations about your formatting rules.
+        - Use Markdown formatting (e.g., **, ####) for clarity.
+        - DO NOT use ASCII art tables.
+        - DO NOT use Markdown tables (i.e., do not use | or --- to make tables).
+        - ONLY use bullet lists or plain text for presenting data.
+        - Example of what NOT to do:
+            | District | Value |
+            |----------|-------|
+            | X        | 123   |
+        - Example of what you SHOULD do:
+            - District X: Value 123
+            - District Y: Value 456
+        """
     }
 
-    try:
-        logger.info("="*25 + " NLG: GENERATING TEXT FROM DATA " + "="*25)
-        logger.info(f"User Query: '{user_query}'")
-        log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
-        logger.info("\n--- SARVAM API REQUEST (NLG) ---\n" + log_payload)
-        response = requests.post(API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        api_output = response.json()
-        # Create a copy for logging and remove the verbose 'usage' block
-        log_output = api_output.copy()
-        log_output.pop('usage', None)
-        logger.info("\n--- SARVAM API RESPONSE (NLG) ---\n" + json.dumps(log_output, indent=2))
-        
-        if 'choices' in api_output and len(api_output['choices']) > 0:
-            response_text = api_output['choices'][0]['message']['content'].strip()
-            logger.info("\n--- SUCCESSFULLY GENERATED RESPONSE ---\n" + response_text)
-            logger.info("="*70)
-            return response_text
-        else:
-            logger.error("API response missing 'choices' or empty choices array")
-            return "I'm sorry, but I couldn't generate a proper summary from the data."
-            
-    except requests.exceptions.RequestException as e:
-        logger.error(f"API request failed in get_english_from_data: {e}")
-        if hasattr(e, 'response') and e.response is not None:
-            logger.error(f"API error response: {e.response.text}")
-        return "Sorry, I encountered an error while summarizing the data."
-        
-    except Exception as e:
-        logger.error(f"Unexpected error in get_english_from_data: {str(e)}")
-        return "Sorry, I encountered an error while formulating the response."
+    user_message = {
+        "role": "user",
+        "content": f"""User Query: "{user_query}"
+        Database Data:
+        {data_string}
+
+        Your Summary:
+        """
+    }
+
+    messages = [system_message, user_message]
+    full_response = ""
+    continuation_count = 0
+    max_continuations = 5  # Prevent infinite loops
+
+    while continuation_count < max_continuations:
+        payload = {
+            "model": MODEL_IDENTIFIER,
+            "messages": messages,
+            "temperature": 0.1,
+            "max_tokens": 7168
+        }
+
+        try:
+            logger.info("="*25 + " NLG: GENERATING TEXT FROM DATA " + "="*25)
+            logger.info(f"User Query: '{user_query}'")
+            log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
+            logger.info("\n--- SARVAM API REQUEST (NLG) ---\n" + log_payload)
+            response = requests.post(API_URL, headers=headers, json=payload)
+            response.raise_for_status()
+            api_output = response.json()
+            log_output = api_output.copy()
+            log_output.pop('usage', None)
+            logger.info("\n--- SARVAM API RESPONSE (NLG) ---\n" + json.dumps(log_output, indent=2))
+
+            if 'choices' in api_output and len(api_output['choices']) > 0:
+                response_text = api_output['choices'][0]['message']['content'].strip()
+                logger.info("\n--- SUCCESSFULLY GENERATED RESPONSE ---\n" + response_text)
+                logger.info("="*70)
+                full_response += ("\n" if full_response else "") + response_text
+
+                # Check for continuation
+                if "continued in next message" in response_text.lower() or api_output['choices'][0].get('finish_reason') == "length":
+                    # Add the last assistant message to the conversation and continue
+                    messages.append({"role": "assistant", "content": response_text})
+                    continuation_count += 1
+                    continue
+                else:
+                    return full_response
+            else:
+                logger.error("API response missing 'choices' or empty choices array")
+                return "I'm sorry, but I couldn't generate a proper summary from the data."
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed in get_english_from_data: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"API error response: {e.response.text}")
+            return "Sorry, I encountered an error while summarizing the data."
+        except Exception as e:
+            logger.error(f"Unexpected error in get_english_from_data: {str(e)}")
+            return "Sorry, I encountered an error while formulating the response."
+
+    return full_response or "Sorry, the response was too long to complete."
