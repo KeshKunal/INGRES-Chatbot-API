@@ -34,12 +34,36 @@ def execute_query(fields: list, filters: dict) -> list:
 
     # Dynamically and safely add filters from the JSON
     if 'state' in filters:
-        query_builder.append('AND "STATES" ILIKE :state')
-        params['state'] = f"%{filters['state']}%"
+        state_filter = filters['state']
+        if isinstance(state_filter, list):
+            # Handle a list of states for comparison queries
+            if state_filter:
+                or_clauses = []
+                for i, state in enumerate(state_filter):
+                    param_name = f"state_{i}"
+                    or_clauses.append(f'"STATES" ILIKE :{param_name}')
+                    params[param_name] = f"%{state}%"
+                query_builder.append(f"AND ({' OR '.join(or_clauses)})")
+        else:
+            # Handle a single state string
+            query_builder.append('AND "STATES" ILIKE :state')
+            params['state'] = f"%{state_filter}%"
 
     if 'district' in filters:
-        query_builder.append('AND "DISTRICT" ILIKE :district')
-        params['district'] = f"%{filters['district']}%"
+        district_filter = filters['district']
+        if isinstance(district_filter, list):
+            # Handle a list of districts for comparison queries
+            if district_filter:
+                or_clauses = []
+                for i, district in enumerate(district_filter):
+                    param_name = f"district_{i}"
+                    or_clauses.append(f'"DISTRICT" ILIKE :{param_name}')
+                    params[param_name] = f"%{district}%"
+                query_builder.append(f"AND ({' OR '.join(or_clauses)})")
+        else:
+            # Handle a single district string
+            query_builder.append('AND "DISTRICT" ILIKE :district')
+            params['district'] = f"%{district_filter}%"
     
     # You can add more filters here for other columns as needed...
 

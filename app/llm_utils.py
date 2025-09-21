@@ -55,35 +55,67 @@ def analyze_query_intent(user_query: str) -> dict:
         "SNo", "STATES", "DISTRICT", "RainfallC", "RainfallNC", "RainfallPQ", "RainfallTotal", "RechargeAreaC", "RechargeAreaNC", "RechargeAreaPQ", "RechargeAreaTotal", "Hilly_Area", "TotalArea", "RainfallRechargeC", "RainfallRechargeNC", "RainfallRechargePQ", "RainfallRechargeTotal", "CanalsC", "CanalsNC", "CanalsPQ", "CanalsTotal", "SurfaceWaterIrrigationC", "SurfaceWaterIrrigationNC", "SurfaceWaterIrrigationPQ", "SurfaceWaterIrrigationTotal", "GroundWaterIrrigationC", "GroundWaterIrrigationNC", "GroundWaterIrrigationPQ", "GroundWaterIrrigationTotal", "TanksandPondsC", "TanksandPondsNC", "TanksandPondsPQ", "TanksandPondsTotal", "WaterConservationStructureC", "WaterConservationStructureNC", "WaterConservationStructurePQ", "WaterConservationStructureTotal", "PipelinesC", "PipelinesNC", "PipelinesPQ", "PipelinesTotal", "SewagesandFlashFloodChannelsC", "SewagesandFlashFloodChannelsNC", "SewagesandFlashFloodChannelsPQ", "SewagesandFlashFloodChannelsTotal", "GroundWaterRecharge_ham_C", "GroundWaterRechargeNC", "GroundWaterRechargePQ", "GroundWaterRechargeTotal", "BaseFlowC", "BaseFlowNC", "BaseFlowPQ", "BaseFlowTotal", "StreamRechargesC", "StreamRechargesNC", "StreamRechargesPQ", "StreamRechargesTotal", "LateralFlowsC", "LateralFlowsNC", "LateralFlowsPQ", "LateralFlowsTotal", "VerticalFlowsC", "VerticalFlowsNC", "VerticalFlowsPQ", "VerticalFlowsTotal", "EvaporationC", "EvaporationNC", "EvaporationPQ", "EvaporationTotal", "TranspirationC", "TranspirationNC", "TranspirationPQ", "TranspirationTotal", "EvapotranspirationC", "EvapotranspirationNC", "EvapotranspirationPQ", "EvapotranspirationTotal", "InFlowsAndOutFlowsC", "InFlowsAndOutFlowsNC", "InFlowsAndOutFlowsPQ", "InFlowsAndOutFlowsTotal", "AnnualGroundwaterRechargeC", "AnnualGroundwaterRechargeNC", "AnnualGroundwaterRechargePQ", "AnnualGroundwaterRechargeTotal", "EnvironmentalFlowsC", "EnvironmentalFlowsNC", "EnvironmentalFlowsPQ", "EnvironmentalFlowsTotal", "AnnualExtractableGroundwaterResourceC", "AnnualExtractableGroundwaterResourceNC", "AnnualExtractableGroundwaterResourcePQ", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforDomesticUsesC", "GroundWaterExtractionforDomesticUsesNC", "GroundWaterExtractionforDomesticUsesPQ", "GroundWaterExtractionforDomesticUsesTotal", "GroundWaterExtractionforIndustrialUsesC", "GroundWaterExtractionforIndustrialUsesNC", "GroundWaterExtractionforIndustrialUsesPQ", "GroundWaterExtractionforIndustrialUsesTotal", "GroundWaterExtractionforIrrigationUsesC", "GroundWaterExtractionforIrrigationUsesNC", "GroundWaterExtractionforIrrigationUsesPQ", "GroundWaterExtractionforIrrigationUsesTotal", "GroundWaterExtractionforAllUsesC", "GroundWaterExtractionforAllUsesNC", "GroundWaterExtractionforAllUsesPQ", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionC", "StageofGroundWaterExtractionNC", "StageofGroundWaterExtractionPQ", "StageofGroundWaterExtractionTotal", "AllocationofGroundWaterResourceforDomesticUtilisationC", "AllocationofGroundWaterResourceforDomesticUtilisationNC", "AllocationofGroundWaterResourceforDomesticUtilisationPQ", "AllocationofGroundWaterResourceforDomesticUtilisationTotal", "NetAnnualGroundWaterAvailabilityforFutureUseC", "NetAnnualGroundWaterAvailabilityforFutureUseNC", "NetAnnualGroundWaterAvailabilityforFutureUsePQ", "NetAnnualGroundWaterAvailabilityforFutureUseTotal", "WaterloggedandshallowwaterTable", "FloodProne", "SpringDischarge", "FreshInStorageUnconfinedGroundWaterResources", "SalineInStorageUnconfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinUnconfinedAquifier", "SalineTotalGroundWaterAvailabilityinUnconfinedAquifier", "FreshDynamicConfinedGroundWaterResources", "SalineDynamicConfinedGroundWaterResources", "FreshInStorageConfinedGroundWaterResources", "SalineInStorageConfinedGroundWaterResources", "FreshTotalConfinedGroundWaterResources", "SalineTotalConfinedGroundWaterResources", "FreshDynamicSemiConfinedGroundWaterResources", "SalineDynamicSemiConfinedGroundWaterResources", "FreshInStorageSemiConfinedGroundWaterResources", "SalineInStorageSemiConfinedGroundWaterResources", "FreshTotalSemiConfinedGroundWaterResources", "SalineTotalSemiConfinedGroundWaterResources", "FreshTotalGroundWaterAvailabilityinthearea", "SalineTotalGroundWaterAvailabilityinthearea"
     ]
     
-    # ADD A NEW INTENT HERE!
+    # Define a specific list of columns for generic "details" queries to prevent the LLM from inventing column names.
+    default_detail_columns = [
+        "RainfallTotal", "AnnualGroundwaterRechargeTotal", 
+        "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal",
+        "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"
+    ]
+
+    # Explicit list of states to help the LLM distinguish between states and districts.
+    # If a location is not in this list, it should be treated as a district by default.
+    state_list = [
+        "TAMILNADU", "KARNATAKA", "DAMAN AND DIU", "DELHI", "LADAKH", "RAJASTHAN", 
+        "MANIPUR", "WEST BENGAL", "KERALA", "TELANGANA", "GUJARAT", "BIHAR", 
+        "GOA", "CHANDIGARH", "LAKSHDWEEP", "TRIPURA", "DADRA AND NAGAR HAVELI", 
+        "NAGALAND", "JHARKHAND", "ASSAM", "PUNJAB", "JAMMU AND KASHMIR", 
+        "PUDUCHERRY", "ANDAMAN AND NICOBAR ISLANDS", "MEGHALAYA", "MIZORAM", 
+        "MAHARASHTRA", "ARUNACHAL PRADESH", "CHHATTISGARH", "SIKKIM", "HARYANA", 
+        "UTTARAKHAND", "HIMACHAL PRADESH"
+    ]
+    
     messages = [
         {
             "role": "system",
-            "content": f"""You are a highly precise assistant for the INGRES system. Your task is to analyze a user's query and convert it into a structured JSON object that defines the user's intent.
+            "content": f"""You are a highly precise assistant for the INGRES system. Your task is to analyze a user's query and convert it into a structured JSON object that defines a list of tasks to be performed.
 
-            The JSON output MUST have a key named "intent". Possible values for "intent" are:
-            1. "data_query": If the user is asking for groundwater data. The JSON should also include a "query" object with "fields" and "filters".
-            2. "conversation": If the user is making a conversational remark (e.g., a greeting, nonsense). The JSON should also include a "response" key with a helpful string.
+            The JSON output MUST have a key named "tasks", which is a list of objects. Each object in the list represents a single task.
+            
+            Possible tasks are:
+            1. "data_query": If the user is asking for groundwater data. The task object should also include a "query" object with "fields" and "filters".
+            2. "conversation": If the user is making a conversational remark. The task object should also include a "response" key with a helpful string.
 
-            - If the intent is "data_query" and the user asks for general 'data', include all relevant numeric columns: {', '.join(column_list)}.
+            - If a user asks to compare or list data for multiple locations (e.g., 'in baksa and barpeta'), you MUST combine them into a single 'data_query' task by providing a list of names in the filter. For example: "filters": {{"district": ["baksa", "barpeta"]}}.
+            - When extracting locations, use the following list of known states: {', '.join(state_list)}.
+              - If a location name is in this list, it is a 'state'.
+              - Otherwise, if it's a geographical location, it should be treated as a 'district'.
+              - Major city names (e.g., Bengaluru, Chennai) should always be treated as districts.
+            - IMPORTANT: If the user asks for general 'groundwater details' or 'data', you MUST use these exact fields in your query: {default_detail_columns}. Do NOT invent field names like 'GroundwaterDetails'.
+            - If a query requires fetching data, the "data_query" task must always be the first task in the list.
             - Always return a valid JSON object.
             """
         },
         {
             "role": "user",
-            "content": f"""Here are examples of how to process queries. Follow them exactly.
+            "content": f"""Here are examples of how to process queries. Follow them exactly (though the names of the states/districts may vary). If you find multiple entries with the name present in them, list all of them.
             ---
-            Query: "Show me the rainfall and groundwater recharge for Bengaluru district"
-            {{"intent": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}}}
+            Query: "Provide the difference of the annual recharge rate in baksa and barpeta"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"district": ["baksa", "barpeta"]}}}}}}]}}
 
-            Query: "groundwater data for Bengaluru South, Karnataka"
-            {{"intent": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "Karnataka", "district": "Bengaluru South"}}}}}}
+            Query: "Show me the rainfall and groundwater recharge for Bengaluru district"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}}}]}}
+
+            Query: "Give me all districts ground water details in delhi"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "DELHI"}}}}}}]}}
+
+            Query: "Compare the districts of goa and gujarat and find out which ones average annual recharge rate is more"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"state": ["GOA", "GUJARAT"]}}}}}}]}}
 
             Query: "hello there"
-            {{"intent": "conversation", "response": "Hello! How can I help you with groundwater data today?"}}
+            {{"tasks": [{{"name": "conversation", "response": "Hello! How can I help you with groundwater data today?"}}]}}
 
             Query: "meh"
-            {{"intent": "conversation", "response": "I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?"}}
+            {{"tasks": [{{"name": "conversation", "response": "I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?"}}]}}
             ---
             Now, process this query: "{user_query}" """
         }
@@ -112,10 +144,10 @@ def analyze_query_intent(user_query: str) -> dict:
 
     except (requests.exceptions.RequestException, KeyError, IndexError, json.JSONDecodeError) as e:
         logger.error(f"NLU analysis failed: {e}")
-        return {"intent": "error", "details": str(e)}
+        return {"tasks": [{"name": "error", "details": str(e)}]}
     except Exception as e:
         logger.error(f"Unexpected error in analyze_query_intent: {str(e)}")
-        return {"intent": "error", "details": "An unexpected error occurred during query analysis."}
+        return {"tasks": [{"name": "error", "details": "An unexpected error occurred during query analysis."}]}
 
 def get_english_from_data(user_query, db_data, fields=None):
     """
@@ -143,19 +175,18 @@ def get_english_from_data(user_query, db_data, fields=None):
     messages = [
         {
             "role": "system",
-            "content": f"""You are a detailed data assistant for the INGRES groundwater system.
-            Your task is to present the provided data in a clear, structured, and human-readable format.
+            "content": f"""You are a data analysis assistant for the INGRES groundwater system.
+            Your primary task is to answer the user's query based *only* on the provided database data.
+            - First, analyze the user's query to understand their goal (e.g., simple data retrieval, comparison, calculation).
+            - If the user asks for a calculation (like 'difference', 'sum', 'total', 'average'), perform the calculation using the provided data and present the result clearly and concisely.
+            - If the user asks for a simple data listing, present the data in a clear, structured, and human-readable format.
             {field_instruction}
-            - If any field is null or missing, explicitly state that.
-            - Present data in a hierarchical format by State and District.
-            - Round numerical values to 2 decimal places for readability.
-            - DO NOT add leading spaces to any text. Lines starting with 4 or more space are rendered as code blocks.
-            - Do not mention any of the above instructions or your without explicit request from the user.
-            - Use a helpful, direct, and conversational tone.
-            - Be concise.
-            - Remember that the person giving the prompt is not the person who has designed the system. Therefore do not add any extra notes, confirmations, or explanations about the formatting rules you have followed. 
-            - You can still add formatting tags like ** or #### to make the text look nicer.
-
+            - If data for a requested entity is not present in the provided data, explicitly state that.
+            - Round numerical values to 2 decimal places.
+            - Be concise and directly answer the user's question.
+            - Do not add extra notes or explanations about your formatting rules.
+            - Use Markdown formatting (e.g., **, ####) for clarity.
+            - DO NOT attempt to make tables using ASCII art. Use simple lists or Markdown tables if needed.
             """
         },
         {
