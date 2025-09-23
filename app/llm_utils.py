@@ -115,7 +115,8 @@ def analyze_query_intent(user_query: str) -> dict:
             
             Possible tasks are:
             1. "data_query": If the user is asking for groundwater data. The task object should also include a "query" object with "fields" and "filters".
-            2. "conversation": If the user is making a conversational remark. The task object should also include a "response" key with a helpful string.
+            2. "generate_visualization": If the user asks to create a chart (e.g., 'bar chart', 'pie chart', 'visualize'). The task object should include "chart_type" ('bar' or 'pie') and the "field" to visualize. This task MUST always be preceded by a "data_query" task.
+            3. "conversation": If the user is making a conversational remark. The task object should also include a "response" key with a helpful string.
 
             - If a user asks to compare or list data for multiple locations (e.g., 'in baksa and barpeta'), you MUST combine them into a single 'data_query' task by providing a list of names in the filter. For example: "filters": {{"district": ["baksa", "barpeta"]}}.
             - When extracting locations, use the following list of known states: {', '.join(state_list)}.
@@ -129,16 +130,19 @@ def analyze_query_intent(user_query: str) -> dict:
         },
         {
             "role": "user",
-            "content": f"""Here are examples of how to process queries. Follow them exactly (though the names of the states/districts may vary). If you find multiple entries with the name present in them, list all of them.
+            "content": f"""Here are examples of how to process queries. Follow them exactly.
             ---
             Query: "Provide the difference of the annual recharge rate in baksa and barpeta"
             {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"district": ["baksa", "barpeta"]}}}}}}]}}
+
+            Query: "Create a barchart comparing the annual recharge rate of the bengaluru districts"
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"district": "bengaluru"}}}}}}, {{"name": "generate_visualization", "chart_type": "bar", "field": "AnnualGroundwaterRechargeTotal"}}]}}
 
             Query: "Show me the rainfall and groundwater recharge for Bengaluru district"
             {{"tasks": [{{"name": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal"], "filters": {{"district": "Bengaluru"}}}}}}]}}
 
             Query: "Give me all districts ground water details in delhi"
-            {{"tasks": [{{"name": "data_query", "query": {{"fields": ["RainfallTotal", "AnnualGroundwaterRechargeTotal", "AnnualExtractableGroundwaterResourceTotal", "GroundWaterExtractionforAllUsesTotal", "StageofGroundWaterExtractionTotal", "NetAnnualGroundWaterAvailabilityforFutureUseTotal"], "filters": {{"state": "DELHI"}}}}}}]}}
+            {{"tasks": [{{"name": "data_query", "query": {{"fields": {default_detail_columns}, "filters": {{"state": "DELHI"}}}}}}]}}
 
             Query: "Compare the districts of goa and gujarat and find out which ones average annual recharge rate is more"
             {{"tasks": [{{"name": "data_query", "query": {{"fields": ["AnnualGroundwaterRechargeTotal"], "filters": {{"state": ["GOA", "GUJARAT"]}}}}}}]}}
@@ -148,9 +152,6 @@ def analyze_query_intent(user_query: str) -> dict:
 
             Query: "hello there"
             {{"tasks": [{{"name": "conversation", "response": "Hello! How can I help you with groundwater data today?"}}]}}
-
-            Query: "meh"
-            {{"tasks": [{{"name": "conversation", "response": "I'm sorry, I didn't understand that. Could you please rephrase your question about groundwater data?"}}]}}
             ---
             Now, process this query: "{user_query}" """
         }

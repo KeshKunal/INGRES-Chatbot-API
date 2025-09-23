@@ -42,7 +42,7 @@ const Message = ({ message, isProcessing }) => {
   const formatGroundwaterData = (text) => {
     // Heuristic to determine if this is a groundwater data response.
     // Check for common keywords and the expected Markdown heading format.
-    if (!text.includes('#### **') || (!text.includes('RainfallTotal') && !text.includes('AnnualGroundwaterRechargeTotal'))) {
+    if (!text || !text.includes('#### **') || (!text.includes('RainfallTotal') && !text.includes('AnnualGroundwaterRechargeTotal'))) {
       return null; // Fallback to default markdown rendering
     }
 
@@ -129,23 +129,90 @@ const Message = ({ message, isProcessing }) => {
         </div>
       );
     }
+    
+    // NEW VISUALIZATION LOGIC
+    if (message.type === 'visualization' && message.data) {
+      if (message.data.visualType === 'bar' && message.data.chartData) {
+        const chartData = {
+          labels: message.data.chartData.labels,
+          datasets: [{
+            label: message.data.title || 'Groundwater Data',
+            data: message.data.chartData.values,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            borderRadius: 4,
+          }]
+        };
+
+        const chartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: 'var(--text-color)', // Use CSS variables for theme compatibility
+                font: { size: 14 }
+              }
+            },
+            title: {
+              display: true,
+              text: message.data.title,
+              color: 'var(--text-color)',
+              font: { size: 16, weight: 'bold' }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleFont: { size: 14 },
+              bodyFont: { size: 12 },
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  if (context.parsed.y !== null) {
+                    label += new Intl.NumberFormat().format(context.parsed.y);
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: 'var(--text-color-secondary)' },
+              grid: { color: 'var(--border-color)' }
+            },
+            x: {
+              ticks: { color: 'var(--text-color-secondary)', maxRotation: 45, minRotation: 30 },
+              grid: { color: 'var(--border-color)' }
+            }
+          }
+        };
+        
+        // Add a container to control the chart's size
+        return (
+          <div className="chart-container" style={{ position: 'relative', height: '400px', width: '100%' }}>
+            <Bar options={chartOptions} data={chartData} />
+          </div>
+        );
+      }
+      // Add logic for 'pie' charts here if needed
+    }
 
     if (message.sender === 'user') {
       return <p className="message-text">{message.text}</p>;
     }
     
     if (message.sender === 'bot') {
-      if (message.type === 'visualization' && message.data) {
-        // ... (visualization logic remains the same)
-      } else {
-        // For regular bot text, try to format as structured data first.
-        const formattedData = formatGroundwaterData(message.text);
-        if (formattedData) {
-          return formattedData; // Render the structured cards
-        }
-        // If it's not structured data, render as plain markdown.
-        return <ReactMarkdown>{message.text}</ReactMarkdown>;
+      const formattedData = formatGroundwaterData(message.text);
+      if (formattedData) {
+        return formattedData;
       }
+      return <ReactMarkdown>{message.text}</ReactMarkdown>;
     }
     
     return <p className="message-text">{message.text}</p>;

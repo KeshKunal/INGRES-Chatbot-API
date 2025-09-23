@@ -9,183 +9,119 @@ from .logger import get_logger
 logger = get_logger(__name__)
 
 class ChatService:
-    """
-    Orchestrates the chatbot's response generation by analyzing user intent
-    and dispatching to the appropriate handler.
-    """
-
     def __init__(self):
-        # This handler map is the key to making the system extensible.
-        # It maps a task name to its corresponding handler method.
         self.task_handlers = {
             "data_query": self._handle_data_query,
+            "generate_visualization": self._handle_visualization,
             "conversation": self._handle_conversation,
-            # --- Future handlers for multi-tasking can be added here ---
-            # "generate_visualization": self._handle_visualization,
-            # "export_data": self._handle_data_export,
         }
 
     async def generate_streaming_response(self, request: ChatRequest):
         """
         Main entry point for generating responses.
-        1. Analyzes the query to get a list of tasks.
-        2. Executes each task, collecting final outputs.
-        3. Composes and streams a single, final response.
+        This function now uses a single, unified loop to process all tasks correctly.
         """
         logger.info(f"Processing query: {request.query}")
         
-        task_context = {}
-        final_response_parts = []
-
         try:
-            yield "data: {\"type\": \"status\", \"message\": \"Analyzing your query...\"}\n\n"
+            yield 'data: {"type": "status", "message": "Analyzing your query..."}\n\n'
             
             nlu_result = analyze_query_intent(request.query)
             tasks = nlu_result.get("tasks", [])
 
             if not tasks:
-                yield "I'm sorry, I could not determine what to do with your request."
+                error_payload = {"type": "final_text", "content": "I couldn't understand that. Please rephrase."}
+                yield f"data: {json.dumps(error_payload)}\n\n"
                 return
 
-            # 2. Loop through tasks, stream status updates, and collect final text outputs.
+            task_context = {'all_tasks': tasks}
+
+            # --- SIMPLIFIED AND CORRECTED MAIN LOOP ---
             for task in tasks:
                 task_name = task.get("name", "unknown")
-                handler = self.task_handlers.get(task_name, self._handle_unknown_task)
+                handler = self.task_handlers.get(task_name)
                 
-                async for chunk in handler(request, task, task_context):
-                    if isinstance(chunk, str) and chunk.startswith("data:"):
-                        yield chunk  # Pass status updates directly to the client
-                    elif isinstance(chunk, dict) and chunk.get("type") == "final_text":
-                        final_response_parts.append(chunk.get("content")) # Collect final text
-
-            # 3. After all tasks are complete, combine the collected parts into a single response.
-            if final_response_parts:
-                # Join the parts with a Markdown horizontal rule for clear separation.
-                final_response = "\n\n---\n\n".join(filter(None, final_response_parts))
-                yield final_response
+                if handler:
+                    # The handler will yield dictionaries. This loop formats them.
+                    async for chunk in handler(request, task, task_context):
+                        yield f"data: {json.dumps(chunk)}\n\n"
 
         except Exception as e:
-            logger.error(f"Error in streaming response pipeline: {str(e)}")
-            error_payload = {
-                "type": "error",
-                "text": "I'm sorry, a critical error occurred.",
-                "errorDetails": str(e)
-            }
+            logger.error(f"Error in streaming pipeline: {str(e)}", exc_info=True)
+            error_payload = {"type": "error", "text": "A critical error occurred.", "errorDetails": str(e)}
             yield f"data: {json.dumps(error_payload)}\n\n"
-
-    # --- HANDLER METHODS ---
-    # Handlers now yield status updates and a structured dict for their final text output.
+        finally:
+            # Always send an End-Of-Stream message so the frontend knows when to stop.
+            yield 'data: {"type": "eos"}\n\n'
 
     async def _handle_conversation(self, request: ChatRequest, task: dict, task_context: dict):
-        """Handles simple conversational replies."""
         logger.info("Executing task: conversation")
-        response = task.get("response", "I'm not sure how to respond to that. Please ask me about groundwater data.")
+        response = task.get("response", "Please ask me about groundwater data.")
         yield {"type": "final_text", "content": response}
 
     async def _handle_data_query(self, request: ChatRequest, task: dict, task_context: dict):
-        """Handles the full pipeline for a database query."""
+        """Handles text-only database queries."""
         logger.info("Executing task: data_query")
         
-        query_json = task.get('query')
-        if not query_json:
-            yield {"type": "final_text", "content": "I understood that you're asking for data, but I couldn't figure out the specifics. Could you please rephrase?"}
+        # Check if a visualization is planned. If so, this task should be skipped.
+        if any(t.get("name") == "generate_visualization" for t in task_context['all_tasks']):
+            logger.info("Skipping redundant data_query task because a visualization is planned.")
             return
 
-        # Step 1: Yield status and fetch data
-        yield "data: {\"type\": \"status\", \"message\": \"Fetching groundwater data...\"}\n\n"
+        query_json = task.get('query')
+        if not query_json:
+            yield {"type": "final_text", "content": "Query parameters were missing."}
+            return
+
+        yield {"type": "status", "message": "Fetching groundwater data..."}
         filters = query_json.get('filters', {})
         fields = query_json.get('fields', [])
         db_results = execute_query(fields, filters)
-        logger.info(f"Database returned {len(db_results)} results")
-
-        task_context['db_results'] = db_results
-
-        # Step 2: Yield status and generate summary
-        yield "data: {\"type\": \"status\", \"message\": \"Preparing your summary...\"}\n\n"
-        response_text = get_english_from_data(request.query, db_results, fields)
         
-        # Step 3: Yield the final text output in a structured way
+        yield {"type": "status", "message": "Preparing your summary..."}
+        response_text = get_english_from_data(request.query, db_results, fields)
         yield {"type": "final_text", "content": response_text}
 
-    async def _handle_unknown_task(self, request: ChatRequest, task: dict, task_context: dict):
-        """Handles cases where the task name is not recognized."""
-        logger.warning(f"Unhandled task: {task.get('name')}")
-        yield {"type": "final_text", "content": "I'm sorry, I'm not sure how to handle part of your request. Please try asking in a different way."}
+    async def _handle_visualization(self, request: ChatRequest, task: dict, task_context: dict):
+        """Unified handler for visualizations. Fetches its own data."""
+        logger.info("Executing task: generate_visualization")
+        chart_type = task.get("chart_type")
+        field = task.get("field")
 
-    def _prepare_visualization(self, data, query):
-        """Create chart data based on real database results."""
-        if not data or len(data) == 0:
-            return None
+        data_query_task = next((t for t in task_context['all_tasks'] if t.get('name') == 'data_query'), None)
         
-        # Get the first few records for visualization
-        sample_data = data[:10]  # Limit to first 10 records for chart clarity
+        if not all([chart_type, field, data_query_task]):
+            yield {"type": "final_text", "content": "I understood you want a chart, but some details are missing."}
+            return
+
+        yield {"type": "status", "message": f"Fetching data for your {chart_type} chart..."}
         
-        # Extract location names (district/state)
-        labels = []
-        for item in sample_data:
-            if 'DISTRICT' in item and 'STATES' in item:
-                labels.append(f"{item['DISTRICT']}, {item['STATES']}")
-            elif 'DISTRICT' in item:
-                labels.append(item['DISTRICT'])
-            elif 'STATES' in item:
-                labels.append(item['STATES'])
-            else:
-                labels.append("Unknown Location")
+        query_json = data_query_task.get('query')
+        filters = query_json.get('filters', {})
+        fields = query_json.get('fields', [])
         
-        # Determine what type of data to visualize based on available columns
-        chart_data = None
-        chart_title = "Groundwater Data"
+        # --- CRITICAL FIX ---
+        # Ensure the field to be visualized is always added to the query fields.
+        if field not in fields:
+            fields.append(field)
+        # --- END OF FIX ---
         
-        # Check for different types of groundwater data
-        if 'AnnualGroundwaterRechargeTotal' in sample_data[0]:
-            values = [float(item.get('AnnualGroundwaterRechargeTotal', 0)) for item in sample_data]
-            chart_title = "Annual Groundwater Recharge (HAM)"
-            chart_data = {
-                "labels": labels,
-                "datasets": [{
-                    "label": 'Annual Groundwater Recharge (HAM)',
-                    "data": values,
-                    "backgroundColor": 'rgba(54, 162, 235, 0.6)',
-                    "borderColor": 'rgba(54, 162, 235, 1)',
-                    "borderWidth": 1
-                }]
+        db_results = execute_query(fields, filters)
+        
+        if not db_results:
+            yield {"type": "final_text", "content": f"I couldn't find any data to create a {chart_type} chart."}
+            return
+
+        yield {"type": "status", "message": f"Generating your {chart_type} chart..."}
+        
+        if chart_type == 'bar':
+            labels = [item.get('DISTRICT', 'Unknown') for item in db_results]
+            values = [float(item.get(field, 0)) for item in db_results]
+            chart_data = {"labels": labels, "values": values}
+            title = f"{field} for districts matching '{filters.get('district', 'your query')}'"
+
+            payload = {
+                "type": "visualization",
+                "data": { "visualType": "bar", "title": title, "chartData": chart_data }
             }
-        elif 'RainfallTotal' in sample_data[0]:
-            values = [float(item.get('RainfallTotal', 0)) for item in sample_data]
-            chart_title = "Total Rainfall (mm)"
-            chart_data = {
-                "labels": labels,
-                "datasets": [{
-                    "label": 'Total Rainfall (mm)',
-                    "data": values,
-                    "backgroundColor": 'rgba(75, 192, 192, 0.6)',
-                    "borderColor": 'rgba(75, 192, 192, 1)',
-                    "borderWidth": 1
-                }]
-            }
-        elif 'GroundWaterExtractionforAllUsesTotal' in sample_data[0]:
-            values = [float(item.get('GroundWaterExtractionforAllUsesTotal', 0)) for item in sample_data]
-            chart_title = "Total Groundwater Extraction (HAM)"
-            chart_data = {
-                "labels": labels,
-                "datasets": [{
-                    "label": 'Total Groundwater Extraction (HAM)',
-                    "data": values,
-                    "backgroundColor": 'rgba(255, 99, 132, 0.6)',
-                    "borderColor": 'rgba(255, 99, 132, 1)',
-                    "borderWidth": 1
-                }]
-            }
-        
-        if chart_data:
-            return {
-                "type": "graph",
-                "text": f"{chart_title} for your query",
-                "data": {
-                    "visualType": "bar",
-                    "title": chart_title,
-                    "chartData": chart_data
-                }
-            }
-        
-        return None
+            yield payload

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import ChatWindow from './components/ChatWindow'; 
 import Header from './components/Header';
-import ChatWindow from './components/ChatWindow';
 import ToolsBar from './components/ToolsBar';
 import ChatInput from './components/ChatInput';
 import { streamMessageFromBackend } from './api/chatService';
@@ -19,7 +19,6 @@ function App() {
     const savedMessages = localStorage.getItem('chatMessages');
     return savedMessages ? JSON.parse(savedMessages) : [initialMessage];
   });
-  
   const [selectedTools, setSelectedTools] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [theme, setTheme] = useState('light');
@@ -57,16 +56,22 @@ function App() {
     const userMessage = { id: uuidv4(), sender: 'user', text: messageText, type: 'text' };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
+    setLoadingStatus('Initializing...'); // Initial status
 
     const botMessageId = uuidv4();
+    // Add a placeholder message for the bot's response
     setMessages(prev => [...prev, { id: botMessageId, sender: 'bot', text: '', type: 'text' }]);
 
     const handleChunk = (chunk) => {
-      if (typeof chunk === 'object') {
-        if (chunk.type === 'status') {
-          // Handle status updates for loading indicator
+      // All chunks from the new backend are objects
+      if (typeof chunk !== 'object' || chunk === null) return;
+
+      switch (chunk.type) {
+        case 'status':
           setLoadingStatus(chunk.message);
-        } else if (chunk.type === 'error') {
+          break;
+        
+        case 'error':
           setLoadingStatus('');
           setMessages(prev =>
             prev.map(msg =>
@@ -75,50 +80,44 @@ function App() {
                 : msg
             )
           );
-        } else if (chunk.type === 'graph') {
+          break;
+        
+        case 'final_text':
+          setLoadingStatus('');
+          setMessages(prev =>
+            prev.map(msg =>
+              msg.id === botMessageId
+                ? { ...msg, text: chunk.content, type: 'text' }
+                : msg
+            )
+          );
+          break;
+
+        case 'visualization':
           setLoadingStatus('');
           setMessages(prev =>
             prev.map(msg =>
               msg.id === botMessageId
                 ? { 
                     ...msg, 
-                    text: chunk.text || 'Here is the requested chart.', 
-                    type: 'graph', 
-                    data: {
-                      visualType: 'bar',
-                      chartData: chunk.data
-                    } 
+                    text: chunk.data.title || 'Here is the requested chart.', 
+                    type: 'visualization', // Set the correct type
+                    data: chunk.data // Pass the whole data object
                   }
                 : msg
             )
           );
-        } else {
-          // Handle other object types
-          setLoadingStatus('');
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === botMessageId
-                ? { ...msg, ...chunk }
-                : msg
-            )
-          );
-        }
-      } else {
-        // Handle plain text chunks (final response)
-        setLoadingStatus('');
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === botMessageId
-              ? { ...msg, text: chunk }
-              : msg
-          )
-        );
+          break;
+
+        default:
+          break; // Ignore unknown chunk types
       }
     };
 
     await streamMessageFromBackend(messageText, selectedTools, handleChunk);
     
     setIsLoading(false);
+    setLoadingStatus(''); // Clear status when done
   };
 
   return (
