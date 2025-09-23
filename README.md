@@ -13,8 +13,54 @@ A FastAPI-based backend for the INGRES AI Chatbot, designed to serve as a virtua
 
 ```
 ingres-chatbot-api/
-├── .env
 ├── .gitignore
+├── Frontend
+    ├── .gitignore
+    ├── README.md
+    ├── package-lock.json
+    ├── package.json
+    ├── public
+    │   ├── favicon.ico
+    │   ├── images
+    │   │   ├── Artha AI Circular.png
+    │   │   ├── artha-logo.png
+    │   │   ├── bot-avatar.png
+    │   │   ├── cgwb-logo.png
+    │   │   ├── ingres-logo.png
+    │   │   ├── ingres-watermark.png
+    │   │   ├── send_icon.png
+    │   │   └── user-avatar.png
+    │   ├── index.html
+    │   ├── logo192.png
+    │   ├── logo512.png
+    │   ├── manifest.json
+    │   └── robots.txt
+    └── src
+    │   ├── App.css
+    │   ├── App.js
+    │   ├── App.test.js
+    │   ├── api
+    │       └── chatService.js
+    │   ├── assets
+    │       ├── bot-avatar.png
+    │       ├── ingres-watermark.png
+    │       └── user-avatar.png
+    │   ├── components
+    │       ├── ChatInput.js
+    │       ├── ChatWindow.js
+    │       ├── Header.css
+    │       ├── Header.js
+    │       ├── Message.css
+    │       ├── Message.js
+    │       ├── SuggestedQuestions.css
+    │       ├── SuggestedQuestions.js
+    │       ├── ToolsBar.js
+    │       └── TypingIndicator.js
+    │   ├── index.css
+    │   ├── index.js
+    │   ├── logo.svg
+    │   ├── reportWebVitals.js
+    │   └── setupTests.js
 ├── README.md
 ├── app
     ├── __init__.py
@@ -31,6 +77,8 @@ ingres-chatbot-api/
     ├── middleware.py
     ├── services.py
     └── setup_db.py
+├── package-lock.json
+├── package.json
 ├── requirements.txt
 └── tests
     ├── __init__.py
@@ -39,6 +87,7 @@ ingres-chatbot-api/
     ├── test_llm.py
     ├── test_pipeline.py
     └── test_services.py
+
 ```
 
 ## Getting Started
@@ -56,7 +105,8 @@ git checkout develop
 
 ```sh
 python -m venv venv
-venv\Scripts\activate  # On Windows
+.\.venv\Scripts\activate # On Windows
+
 ```
 
 ### 3. Install dependencies
