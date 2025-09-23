@@ -2,13 +2,6 @@ import os
 import requests
 import json
 from dotenv import load_dotenv
-
-# --- PART 1: SETUP ---
-
-import os
-import requests
-import json
-from dotenv import load_dotenv
 from .logger import get_logger
 
 # Initialize logger
@@ -34,6 +27,45 @@ headers = {
     "Content-Type": "application/json"
 }
 
+# Define units for columns
+COLUMN_UNITS = {
+    "SNo": "N/A", "STATES": "N/A", "DISTRICT": "N/A",
+    "RainfallC": "mm", "RainfallNC": "mm", "RainfallPQ": "mm", "RainfallTotal": "mm",
+    "RechargeAreaC": "Hectares", "RechargeAreaNC": "Hectares", "RechargeAreaPQ": "Hectares", "RechargeAreaTotal": "Hectares",
+    "Hilly_Area": "Hectares", "TotalArea": "Hectares",
+    "RainfallRechargeC": "ham", "RainfallRechargeNC": "ham", "RainfallRechargePQ": "ham", "RainfallRechargeTotal": "ham",
+    "CanalsC": "ham", "CanalsNC": "ham", "CanalsPQ": "ham", "CanalsTotal": "ham",
+    "SurfaceWaterIrrigationC": "ham", "SurfaceWaterIrrigationNC": "ham", "SurfaceWaterIrrigationPQ": "ham", "SurfaceWaterIrrigationTotal": "ham",
+    "GroundWaterIrrigationC": "ham", "GroundWaterIrrigationNC": "ham", "GroundWaterIrrigationPQ": "ham", "GroundWaterIrrigationTotal": "ham",
+    "TanksandPondsC": "ham", "TanksandPondsNC": "ham", "TanksandPondsPQ": "ham", "TanksandPondsTotal": "ham",
+    "WaterConservationStructureC": "ham", "WaterConservationStructureNC": "ham", "WaterConservationStructurePQ": "ham", "WaterConservationStructureTotal": "ham",
+    "PipelinesC": "ham", "PipelinesNC": "ham", "PipelinesPQ": "ham", "PipelinesTotal": "ham",
+    "SewagesandFlashFloodChannelsC": "ham", "SewagesandFlashFloodChannelsNC": "ham", "SewagesandFlashFloodChannelsPQ": "ham", "SewagesandFlashFloodChannelsTotal": "ham",
+    "GroundWaterRecharge_ham_C": "ham", "GroundWaterRechargeNC": "ham", "GroundWaterRechargePQ": "ham", "GroundWaterRechargeTotal": "ham",
+    "BaseFlowC": "ham", "BaseFlowNC": "ham", "BaseFlowPQ": "ham", "BaseFlowTotal": "ham",
+    "StreamRechargesC": "ham", "StreamRechargesNC": "ham", "StreamRechargesPQ": "ham", "StreamRechargesTotal": "ham",
+    "LateralFlowsC": "ham", "LateralFlowsNC": "ham", "LateralFlowsPQ": "ham", "LateralFlowsTotal": "ham",
+    "VerticalFlowsC": "ham", "VerticalFlowsNC": "ham", "VerticalFlowsPQ": "ham", "VerticalFlowsTotal": "ham",
+    "EvaporationC": "ham", "EvaporationNC": "ham", "EvaporationPQ": "ham", "EvaporationTotal": "ham",
+    "TranspirationC": "ham", "TranspirationNC": "ham", "TranspirationPQ": "ham", "TranspirationTotal": "ham",
+    "EvapotranspirationC": "ham", "EvapotranspirationNC": "ham", "EvapotranspirationPQ": "ham", "EvapotranspirationTotal": "ham",
+    "InFlowsAndOutFlowsC": "ham", "InFlowsAndOutFlowsNC": "ham", "InFlowsAndOutFlowsPQ": "ham", "InFlowsAndOutFlowsTotal": "ham",
+    "AnnualGroundwaterRechargeC": "ham", "AnnualGroundwaterRechargeNC": "ham", "AnnualGroundwaterRechargePQ": "ham", "AnnualGroundwaterRechargeTotal": "ham",
+    "EnvironmentalFlowsC": "ham", "EnvironmentalFlowsNC": "ham", "EnvironmentalFlowsPQ": "ham", "EnvironmentalFlowsTotal": "ham",
+    "AnnualExtractableGroundwaterResourceC": "ham", "AnnualExtractableGroundwaterResourceNC": "ham", "AnnualExtractableGroundwaterResourcePQ": "ham", "AnnualExtractableGroundwaterResourceTotal": "ham",
+    "GroundWaterExtractionforDomesticUsesC": "ham", "GroundWaterExtractionforDomesticUsesNC": "ham", "GroundWaterExtractionforDomesticUsesPQ": "ham", "GroundWaterExtractionforDomesticUsesTotal": "ham",
+    "GroundWaterExtractionforIndustrialUsesC": "ham", "GroundWaterExtractionforIndustrialUsesNC": "ham", "GroundWaterExtractionforIndustrialUsesPQ": "ham", "GroundWaterExtractionforIndustrialUsesTotal": "ham",
+    "GroundWaterExtractionforIrrigationUsesC": "ham", "GroundWaterExtractionforIrrigationUsesNC": "ham", "GroundWaterExtractionforIrrigationUsesPQ": "ham", "GroundWaterExtractionforIrrigationUsesTotal": "ham",
+    "GroundWaterExtractionforAllUsesC": "ham", "GroundWaterExtractionforAllUsesNC": "ham", "GroundWaterExtractionforAllUsesPQ": "ham", "GroundWaterExtractionforAllUsesTotal": "ham",
+    "StageofGroundWaterExtractionC": "%", "StageofGroundWaterExtractionNC": "%", "StageofGroundWaterExtractionPQ": "%", "StageofGroundWaterExtractionTotal": "%",
+    "AllocationofGroundWaterResourceforDomesticUtilisationC": "ham", "AllocationofGroundWaterResourceforDomesticUtilisationNC": "ham", "AllocationofGroundWaterResourceforDomesticUtilisationPQ": "ham", "AllocationofGroundWaterResourceforDomesticUtilisationTotal": "ham",
+    "NetAnnualGroundWaterAvailabilityforFutureUseC": "ham", "NetAnnualGroundWaterAvailabilityforFutureUseNC": "ham", "NetAnnualGroundWaterAvailabilityforFutureUsePQ": "ham", "NetAnnualGroundWaterAvailabilityforFutureUseTotal": "ham",
+    "WaterloggedandshallowwaterTable": "ham", "FloodProne": "ham", "SpringDischarge": "ham",
+    "FreshInStorageUnconfinedGroundWaterResources": "ham", "SalineInStorageUnconfinedGroundWaterResources": "ham", "FreshTotalGroundWaterAvailabilityinUnconfinedAquifier": "ham", "SalineTotalGroundWaterAvailabilityinUnconfinedAquifier": "ham",
+    "FreshDynamicConfinedGroundWaterResources": "ham", "SalineDynamicConfinedGroundWaterResources": "ham", "FreshInStorageConfinedGroundWaterResources": "ham", "SalineInStorageConfinedGroundWaterResources": "ham", "FreshTotalConfinedGroundWaterResources": "ham", "SalineTotalConfinedGroundWaterResources": "ham",
+    "FreshDynamicSemiConfinedGroundWaterResources": "ham", "SalineDynamicSemiConfinedGroundWaterResources": "ham", "FreshInStorageSemiConfinedGroundWaterResources": "ham", "SalineInStorageSemiConfinedGroundWaterResources": "ham", "FreshTotalSemiConfinedGroundWaterResources": "ham", "SalineTotalSemiConfinedGroundWaterResources": "ham",
+    "FreshTotalGroundWaterAvailabilityinthearea": "ham", "SalineTotalGroundWaterAvailabilityinthearea": "ham"
+}
 
 # --- PART 2: CORE LLM FUNCTIONS ---
 
@@ -187,16 +219,24 @@ def get_english_from_data(user_query, db_data, fields=None):
 
     data_string = "\n".join([str(row) for row in db_data])
 
+    field_instruction = (
+        f"- Only summarize the following fields: {', '.join(fields)}.\nDo NOT include other groundwater details."
+        if fields else "- Summarize all available groundwater data fields."
+    )
+
+    # Prepare unit information for the LLM
+    unit_info_list = []
     if fields:
-        field_list = ', '.join(fields)
-        field_instruction = (
-            f"- Only summarize the following fields: {field_list}.\n"
-            "Do NOT include other groundwater details."
-        )
+        for field in fields:
+            unit = COLUMN_UNITS.get(field, "N/A")
+            if unit != "N/A":
+                unit_info_list.append(f"'{field}' is in {unit}")
+        if unit_info_list:
+            unit_info = "\n- Here are the units for the fields you are summarizing: " + ", ".join(unit_info_list) + "."
+        else:
+            unit_info = ""
     else:
-        field_instruction = (
-            "- Summarize all available groundwater data fields."
-        )
+        unit_info = "" # If no specific fields, LLM should infer or use N/A
 
     system_message = {
         "role": "system",
@@ -214,13 +254,16 @@ def get_english_from_data(user_query, db_data, fields=None):
         - DO NOT use ASCII art tables.
         - DO NOT use Markdown tables (i.e., do not use | or --- to make tables).
         - ONLY use bullet lists or plain text for presenting data.
+        - IMPORTANT: When presenting numerical values, DO NOT use thousands separators (e.g., use 12345.67, not 12,345.67). The frontend will handle formatting.
+        - ALWAYS include the appropriate unit after each numerical value. For example, "RainfallTotal: 661.15 mm" or "AnnualGroundwaterRechargeTotal: 68522.50 ham". For percentage values like 'StageofGroundWaterExtractionTotal', use '%' directly after the number.
+        {unit_info}
         - Example of what NOT to do:
             | District | Value |
             |----------|-------|
             | X        | 123   |
         - Example of what you SHOULD do:
-            - District X: Value 123
-            - District Y: Value 456
+            - District X: Value 123 mm
+            - District Y: Value 456 ham
         """
     }
 
@@ -235,7 +278,7 @@ def get_english_from_data(user_query, db_data, fields=None):
     }
 
     messages = [system_message, user_message]
-    full_response = ""
+    full_response_parts = [] # Use a list to collect parts
     continuation_count = 0
     max_continuations = 5  # Prevent infinite loops
 
@@ -250,6 +293,7 @@ def get_english_from_data(user_query, db_data, fields=None):
         try:
             logger.info("="*25 + " NLG: GENERATING TEXT FROM DATA " + "="*25)
             logger.info(f"User Query: '{user_query}'")
+            # Apply the same formatting as NLU for consistent, readable logs
             log_payload = json.dumps(payload, indent=2).replace('\\n', '\n').replace('\\"', '"')
             logger.info("\n--- SARVAM API REQUEST (NLG) ---\n" + log_payload)
             response = requests.post(API_URL, headers=headers, json=payload)
@@ -263,7 +307,7 @@ def get_english_from_data(user_query, db_data, fields=None):
                 response_text = api_output['choices'][0]['message']['content'].strip()
                 logger.info("\n--- SUCCESSFULLY GENERATED RESPONSE ---\n" + response_text)
                 logger.info("="*70)
-                full_response += ("\n" if full_response else "") + response_text
+                full_response_parts.append(response_text) # Append to list
 
                 # Check for continuation
                 if "continued in next message" in response_text.lower() or api_output['choices'][0].get('finish_reason') == "length":
@@ -272,7 +316,7 @@ def get_english_from_data(user_query, db_data, fields=None):
                     continuation_count += 1
                     continue
                 else:
-                    return full_response
+                    return "\n".join(full_response_parts) # Join all parts at the end
             else:
                 logger.error("API response missing 'choices' or empty choices array")
                 return "I'm sorry, but I couldn't generate a proper summary from the data."
@@ -285,4 +329,4 @@ def get_english_from_data(user_query, db_data, fields=None):
             logger.error(f"Unexpected error in get_english_from_data: {str(e)}")
             return "Sorry, I encountered an error while formulating the response."
 
-    return full_response or "Sorry, the response was too long to complete."
+    return "\n".join(full_response_parts) or "Sorry, the response was too long to complete."

@@ -15,8 +15,6 @@ import {
   Legend
 } from 'chart.js';
 import { FiCopy, FiCheck } from 'react-icons/fi';
-import botAvatar from '../assets/bot-avatar.png';
-import userAvatar from '../assets/user-avatar.png';
 
 ChartJS.register(
   CategoryScale,
@@ -42,57 +40,57 @@ const Message = ({ message, isProcessing }) => {
   };
 
   const formatGroundwaterData = (text) => {
-    // Check if this is a groundwater data response
-    if (!text.includes('Total Rainfall') && !text.includes('Annual Groundwater')) {
-      return <p className="message-text">{text}</p>;
+    // Heuristic to determine if this is a groundwater data response.
+    // Check for common keywords and the expected Markdown heading format.
+    if (!text.includes('#### **') || (!text.includes('RainfallTotal') && !text.includes('AnnualGroundwaterRechargeTotal'))) {
+      return null; // Fallback to default markdown rendering
     }
 
-    // Split the text by district entries
-    const districtEntries = text.split('**For ').filter(entry => entry.trim());
-    
-    if (districtEntries.length === 0) {
-      return <p className="message-text">{text}</p>;
+    // Split the text into an introductory part and district entries
+    const parts = text.split(/(#### \*\*)/);
+    let introText = '';
+    let districtEntriesRaw = [];
+
+    if (parts.length > 1) {
+      introText = parts[0].trim();
+      // Reconstruct district entries, ensuring each starts with '#### **'
+      for (let i = 1; i < parts.length; i += 2) {
+        if (parts[i] === '#### **') {
+          districtEntriesRaw.push(parts[i] + parts[i + 1]);
+        }
+      }
+    } else {
+      return null;
     }
 
-    const introText = districtEntries[0].split('**')[0];
-    
+    if (districtEntriesRaw.length === 0) {
+      return null;
+    }
+
     return (
       <div className="groundwater-response">
-        {introText && <p className="intro-text">{introText.trim()}</p>}
+        {introText && <ReactMarkdown className="intro-text">{introText}</ReactMarkdown>}
         
         <div className="districts-container">
-          {districtEntries.map((entry, index) => {
-            if (!entry.includes('district')) return null;
+          {districtEntriesRaw.map((entry, index) => {
+            const lines = entry.split('\n').filter(line => line.trim());
+            if (lines.length === 0) return null;
+
+            const districtNameMatch = lines[0].match(/#### \*\*([^*]+)\*\*/);
+            const districtName = districtNameMatch ? districtNameMatch[1].trim() : `District ${index + 1}`;
             
-            const lines = entry.split(' - ');
-            const districtName = lines[0].replace(/\*+/g, '').trim();
-            
-            // Extract data points
             const dataPoints = [];
-            lines.forEach(line => {
-              if (line.includes('Total Rainfall:')) {
-                const rainfall = line.match(/Total Rainfall:\s*([0-9.]+)\s*mm/);
-                if (rainfall) dataPoints.push({ label: 'Total Rainfall', value: rainfall[1], unit: 'mm' });
-              }
-              if (line.includes('Annual Groundwater Recharge:')) {
-                const recharge = line.match(/Annual Groundwater Recharge:\s*([0-9.]+)\s*ham/);
-                if (recharge) dataPoints.push({ label: 'Annual Groundwater Recharge', value: recharge[1], unit: 'ham' });
-              }
-              if (line.includes('Annual Extractable Groundwater Resource:')) {
-                const extractable = line.match(/Annual Extractable Groundwater Resource:\s*([0-9.]+)\s*ham/);
-                if (extractable) dataPoints.push({ label: 'Annual Extractable Resource', value: extractable[1], unit: 'ham' });
-              }
-              if (line.includes('Total Groundwater Extraction:')) {
-                const extraction = line.match(/Total Groundwater Extraction:\s*([0-9.]+)\s*ham/);
-                if (extraction) dataPoints.push({ label: 'Total Groundwater Extraction', value: extraction[1], unit: 'ham' });
-              }
-              if (line.includes('Stage of Groundwater Extraction:')) {
-                const stage = line.match(/Stage of Groundwater Extraction:\s*([0-9.]+)%/);
-                if (stage) dataPoints.push({ label: 'Stage of Extraction', value: stage[1], unit: '%' });
-              }
-              if (line.includes('Net Annual Groundwater Available for Future Use:')) {
-                const future = line.match(/Net Annual Groundwater Available for Future Use:\s*([0-9.]+)\s*ham/);
-                if (future) dataPoints.push({ label: 'Available for Future Use', value: future[1], unit: 'ham' });
+            lines.slice(1).forEach(line => {
+              // Generic regex to match: "- **FieldName**: Value Unit"
+              const match = line.match(/^- \*\*([A-Za-z0-9_]+)\*\*:\s*([0-9,.]+)\s*(.*)$/);
+              if (match) {
+                const label = match[1].replace(/([A-Z])/g, ' $1').trim(); // Add space before capital letters
+                const rawValue = match[2];
+                const unit = match[3].trim();
+                
+                // Remove commas before parsing to float for robustness
+                const cleanedValue = rawValue.replace(/,/g, ''); 
+                dataPoints.push({ label: label, value: cleanedValue, unit: unit });
               }
             });
 
@@ -104,7 +102,7 @@ const Message = ({ message, isProcessing }) => {
                     <div key={idx} className="data-item">
                       <span className="data-label">{point.label}</span>
                       <span className="data-value">
-                        {parseFloat(point.value).toLocaleString()} <span className="unit">{point.unit}</span>
+                        {parseFloat(point.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="unit">{point.unit}</span>
                       </span>
                     </div>
                   ))}
@@ -132,51 +130,25 @@ const Message = ({ message, isProcessing }) => {
       );
     }
 
-    // Use ReactMarkdown for bot messages
-    if (message.sender === 'bot') {
-      return <ReactMarkdown>{message.text}</ReactMarkdown>;
+    if (message.sender === 'user') {
+      return <p className="message-text">{message.text}</p>;
     }
     
-    if (message.type === 'visualization' && message.data) {
-      const options = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          title: {
-            display: true,
-            text: message.data.title || 'Data Visualization'
-          }
+    if (message.sender === 'bot') {
+      if (message.type === 'visualization' && message.data) {
+        // ... (visualization logic remains the same)
+      } else {
+        // For regular bot text, try to format as structured data first.
+        const formattedData = formatGroundwaterData(message.text);
+        if (formattedData) {
+          return formattedData; // Render the structured cards
         }
-      };
-
-      switch (message.data.visualType) {
-        case 'bar':
-          return (
-            <div className="chart-container">
-              <Bar data={message.data.chartData} options={options} />
-            </div>
-          );
-        case 'line':
-          return (
-            <div className="chart-container">
-              <Line data={message.data.chartData} options={options} />
-            </div>
-          );
-        case 'pie':
-          return (
-            <div className="chart-container">
-              <Pie data={message.data.chartData} options={options} />
-            </div>
-          );
-        default:
-          return formatGroundwaterData(message.text);
+        // If it's not structured data, render as plain markdown.
+        return <ReactMarkdown>{message.text}</ReactMarkdown>;
       }
     }
     
-    return formatGroundwaterData(message.text);
+    return <p className="message-text">{message.text}</p>;
   };
 
   const showCopyButton = message.sender === 'bot' && 
@@ -185,9 +157,10 @@ const Message = ({ message, isProcessing }) => {
                         !message.text.endsWith('...');
 
   if (isProcessing) {
+    // This is now handled by ChatWindow.js, but kept as a fallback.
     return (
       <div className="message bot-message">
-        <img src={botAvatar} alt="Bot Avatar" className="message-avatar" />
+        <img src="/images/bot-avatar.png" alt="Bot Avatar" className="message-avatar" />
         <div className="typing-indicator">
           <span></span>
           <span></span>
@@ -200,7 +173,7 @@ const Message = ({ message, isProcessing }) => {
   return (
     <div className={`message ${messageClass}`}>
       <img 
-        src={isUser ? userAvatar : botAvatar} 
+        src={isUser ? "/images/user-avatar.png" : "/images/bot-avatar.png"} 
         alt={`${isUser ? 'User' : 'Bot'} Avatar`} 
         className="message-avatar"
       />
