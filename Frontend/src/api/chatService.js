@@ -25,39 +25,26 @@ export const streamMessageFromBackend = async (message, selectedTools, onChunk) 
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
 
+    // Instead of processing line by line, process larger chunks:
     while (true) {
       const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
+      if (done) break;
       
-      buffer += decoder.decode(value, { stream: true });
-
-      // Process buffer line by line for Server-Sent Events (SSE)
-      const lines = buffer.split('\n');
-      buffer = lines.pop(); // Keep the last, possibly incomplete line
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const jsonString = line.substring(6);
-          try {
-            const jsonObject = JSON.parse(jsonString);
-            onChunk(jsonObject); // This is a structured object (graph, error, etc.)
-          } catch (e) {
-            // It might be plain text that happens to start with "data: "
-            onChunk(line);
-          }
-        } else if (line) {
-          onChunk(line); // This is a plain text chunk
+      const chunk = decoder.decode(value, { stream: true });
+      
+      // Process immediately instead of buffering
+      if (chunk.startsWith('data: ')) {
+        const jsonString = chunk.substring(6);
+        try {
+          const jsonObject = JSON.parse(jsonString);
+          onChunk(jsonObject);
+        } catch (e) {
+          onChunk(chunk.substring(6));
         }
+      } else if (chunk.trim()) {
+        onChunk(chunk);
       }
-    }
-
-    // Process any remaining data in the buffer
-    if (buffer) {
-      onChunk(buffer);
     }
 
   } catch (error) {
